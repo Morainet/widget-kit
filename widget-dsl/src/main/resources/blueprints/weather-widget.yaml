@@ -1,0 +1,39 @@
+meta:
+  name: WeatherWidget
+  description: 显示城市、天气图标与更新时间
+  minSdk: 26
+  targetSurfaces:
+    - PHONE
+
+layout: SINGLE_ENTITY_2X2
+
+components:
+  - type: TEXT
+    id: city
+    props:
+      text: "Shanghai"
+      style: headline
+  - type: IMAGE
+    id: weather_icon
+    props:
+      src: "@drawable/ic_sunny"
+  - type: TEXT
+    id: updated_at
+    props:
+      text: "Updated 10:30"
+      style: caption
+
+state:
+  defaultState: loading
+  onError:
+    layout: compact
+    showRetry: true
+
+theme:
+  style: material_you
+  useDynamicColor: true
+
+animations:
+  - preset: FADE
+    targetId: weather_icon
+    durationMs: 300
