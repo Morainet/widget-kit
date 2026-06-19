@@ -403,7 +403,7 @@ includeBuild("../widget-kit")
 
 // app/build.gradle.kts
 dependencies {
-    implementation("net.morainet.widget:widget-core:0.1.0-SNAPSHOT")
+    implementation("com.morainet.widget:widget-core:0.1.0-SNAPSHOT")
 }
 ```
 
@@ -435,13 +435,13 @@ debugImplementation(project(":widget-debugger"))
 ### 6.1 包命名
 
 ```text
-net.morainet.widget.{module}.{feature}
+com.morainet.widget.{module}.{feature}
 ```
 
 示例：
 
-- `net.morainet.widget.core.WidgetManager`
-- `net.morainet.widget.dsl.WidgetBlueprint`
+- `com.morainet.widget.core.WidgetManager`
+- `com.morainet.widget.dsl.WidgetBlueprint`
 
 ### 6.2 命名约定
 

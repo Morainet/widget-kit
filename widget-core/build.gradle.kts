@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "net.morainet.widget.core"
+    namespace = "com.morainet.widget.core"
     compileSdk = 35
 
     defaultConfig {

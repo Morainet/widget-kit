@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "net.morainet.widget.dsl"
+    namespace = "com.morainet.widget.dsl"
     compileSdk = 35
 
     defaultConfig {

@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "net.morainet.widget.debugger"
+    namespace = "com.morainet.widget.debugger"
     compileSdk = 35
 
     defaultConfig {

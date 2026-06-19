@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "net.morainet.widget.state"
+    namespace = "com.morainet.widget.state"
     compileSdk = 35
 
     defaultConfig {

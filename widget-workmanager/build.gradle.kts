@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "net.morainet.widget.workmanager"
+    namespace = "com.morainet.widget.workmanager"
     compileSdk = 35
 
     defaultConfig {

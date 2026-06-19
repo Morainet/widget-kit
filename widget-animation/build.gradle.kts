@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "net.morainet.widget.animation"
+    namespace = "com.morainet.widget.animation"
     compileSdk = 35
 
     defaultConfig {

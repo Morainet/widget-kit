@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "net.morainet.widget.preview"
+    namespace = "com.morainet.widget.preview"
     compileSdk = 35
 
     defaultConfig {

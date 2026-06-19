@@ -24,8 +24,8 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="net.morainet.widget.action.REFRESH" />
-                <action android:name="net.morainet.widget.action.RETRY" />
+                <action android:name="com.morainet.widget.action.REFRESH" />
+                <action android:name="com.morainet.widget.action.RETRY" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -37,8 +37,8 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="net.morainet.widget.action.REFRESH" />
-                <action android:name="net.morainet.widget.action.RETRY" />
+                <action android:name="com.morainet.widget.action.REFRESH" />
+                <action android:name="com.morainet.widget.action.RETRY" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"

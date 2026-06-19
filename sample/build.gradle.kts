@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "net.morainet.widget.sample"
+    namespace = "com.morainet.widget.sample"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "net.morainet.widget.sample"
+        applicationId = "com.morainet.widget.sample"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
