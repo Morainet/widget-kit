@@ -22,7 +22,7 @@ import com.morainet.widget.core.WidgetActions
 import com.morainet.widget.state.WidgetUiState
 
 private val CountKey = intPreferencesKey("counter_value")
-private object CounterStateDefinition : androidx.glance.state.GlanceStateDefinition<Preferences> by PreferencesGlanceStateDefinition
+object CounterStateDefinition : androidx.glance.state.GlanceStateDefinition<Preferences> by PreferencesGlanceStateDefinition
 
 class CounterWidget : GlanceAppWidget() {
 
@@ -39,8 +39,10 @@ class CounterWidget : GlanceAppWidget() {
     companion object {
         suspend fun increment(context: Context, glanceId: GlanceId) {
             updateAppWidgetState(context, CounterStateDefinition, glanceId) { prefs ->
-                val current = prefs[CountKey] ?: 0
-                prefs[CountKey] = current + 1
+                prefs.toMutablePreferences().apply {
+                    val current = prefs[CountKey] ?: 0
+                    this[CountKey] = current + 1
+                }
             }
         }
     }

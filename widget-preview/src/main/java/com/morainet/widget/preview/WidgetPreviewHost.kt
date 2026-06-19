@@ -3,6 +3,7 @@ package com.morainet.widget.preview
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProviderInfo
 import android.content.Context
 import android.widget.RemoteViews
 import androidx.compose.foundation.background
@@ -51,6 +52,7 @@ class WidgetRemoteViewsController(context: Context) {
     private val appContext = context.applicationContext
     private val host = AppWidgetHost(appContext, HOST_ID)
     private var allocatedId: Int = AppWidgetManager.INVALID_APPWIDGET_ID
+    private var hostView: AppWidgetHostView? = null
 
     init {
         host.startListening()
@@ -58,13 +60,14 @@ class WidgetRemoteViewsController(context: Context) {
 
     fun createHostView(): AppWidgetHostView {
         ensureWidgetId()
-        val empty = RemoteViews(appContext.packageName, R.layout.widget_preview_host)
-        return host.createView(appContext, allocatedId, empty)
+        val info = createFakeProviderInfo()
+        val view = host.createView(appContext, allocatedId, info)
+        hostView = view
+        return view
     }
 
     fun update(remoteViews: RemoteViews) {
-        ensureWidgetId()
-        host.createView(appContext, allocatedId, remoteViews)
+        hostView?.updateAppWidget(remoteViews)
     }
 
     fun release() {
@@ -81,6 +84,27 @@ class WidgetRemoteViewsController(context: Context) {
         }
     }
 
+    private fun createFakeProviderInfo(): AppWidgetProviderInfo {
+        return AppWidgetProviderInfo().apply {
+            provider = appContext.packageName.let { pkg ->
+                android.content.ComponentName(
+                    pkg,
+                    "${pkg}.WidgetProvider"
+                )
+            }
+            minWidth = 180
+            minHeight = 110
+            minResizeWidth = 40
+            minResizeHeight = 40
+            updatePeriodMillis = 0
+            initialLayout = R.layout.widget_preview_host
+            autoAdvanceViewId = -1
+            previewLayout = 0
+            resizeMode = AppWidgetProviderInfo.RESIZE_HORIZONTAL or AppWidgetProviderInfo.RESIZE_VERTICAL
+            widgetCategory = AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN
+        }
+    }
+
     companion object {
         const val HOST_ID = 0x4D4B0001
     }
@@ -88,6 +112,10 @@ class WidgetRemoteViewsController(context: Context) {
 
 /**
  * 在 App 内嵌入 Widget 预览容器（Compose 内容或 RemoteViews）。
+ *
+ * [content] 应为标准 Compose Composable（非 Glance 组件）。
+ * Glance 组件（如 Glance Column/Text/GlanceModifier）需要 Glance Composition 环境，
+ * 无法直接在 Compose 中渲染，应通过 [remoteViews] 参数传入已生成的 RemoteViews。
  */
 @Composable
 fun WidgetPreviewHost(
@@ -97,6 +125,7 @@ fun WidgetPreviewHost(
     content: @Composable () -> Unit = {},
 ) {
     val shape = RoundedCornerShape(16.dp)
+
     Box(
         modifier = modifier
             .size(displaySize)

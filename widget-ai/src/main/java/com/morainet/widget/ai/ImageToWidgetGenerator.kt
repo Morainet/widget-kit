@@ -4,7 +4,11 @@ import com.morainet.widget.dsl.WidgetBlueprint
 import com.morainet.widget.dsl.WidgetLayout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -120,12 +124,12 @@ class GeminiImageToWidgetGenerator(
 
         val requestBody = buildJsonObject {
             putJsonArray("contents") {
-                putJsonObject {
+                addJsonObject {
                     putJsonArray("parts") {
-                        putJsonObject {
+                        addJsonObject {
                             put("text", visionPrompt.user)
                         }
-                        putJsonObject {
+                        addJsonObject {
                             putJsonObject("inline_data") {
                                 put("mime_type", mimeType)
                                 put("data", base64Image)
@@ -142,7 +146,7 @@ class GeminiImageToWidgetGenerator(
             }
             putJsonObject("system_instruction") {
                 putJsonArray("parts") {
-                    putJsonObject {
+                    addJsonObject {
                         put("text", visionPrompt.system)
                     }
                 }

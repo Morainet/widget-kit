@@ -49,12 +49,10 @@ import com.morainet.widget.core.WidgetPinHelper
 import com.morainet.widget.debugger.WidgetDebugSnapshot
 import com.morainet.widget.debugger.WidgetDebuggerPanel
 import com.morainet.widget.debugger.WidgetInspector
-import com.morainet.widget.dsl.BlueprintRenderer
 import com.morainet.widget.dsl.DrawableResolver
 import com.morainet.widget.dsl.WidgetBlueprintParser
 import com.morainet.widget.preview.WidgetPreviewHost
 import com.morainet.widget.preview.WidgetPreviewSizes
-import com.morainet.widget.sample.widget.CounterWidgetContent
 import com.morainet.widget.sample.widget.CounterWidgetReceiver
 import com.morainet.widget.sample.widget.WeatherRefreshWorker
 import com.morainet.widget.sample.widget.WeatherRepository
@@ -78,8 +76,7 @@ class MainActivity : ComponentActivity() {
                 "weather_rainy" to R.drawable.ic_weather_rainy,
                 "weather_snow" to R.drawable.ic_weather_snow,
                 "weather_thunder" to R.drawable.ic_weather_thunder,
-                "weather_fog" to R.drawable.ic_weather_fog,
-                "weather_wind" to R.drawable.ic_weather_wind,
+                "weather_wind" to R.drawable.ic_weather_windy,
             ),
         )
 
@@ -108,35 +105,35 @@ class MainActivity : ComponentActivity() {
 
     private fun registerAppFunctions() {
         AppFunctionRegistry.register(object : AppFunctions {
-            override val bindings = mapOf(
-                StandardActions.OPEN_APP to { context ->
+            override val bindings: Map<String, (android.content.Context) -> Unit> = mapOf(
+                StandardActions.OPEN_APP to { context: android.content.Context ->
                     // Already in app, could navigate to a specific screen
                     android.widget.Toast.makeText(
                         context, "Open App action triggered", android.widget.Toast.LENGTH_SHORT,
                     ).show()
                 },
-                StandardActions.REFRESH_DATA to { context ->
+                StandardActions.REFRESH_DATA to { context: android.content.Context ->
                     WeatherRefreshWorker.trigger(context)
                     android.widget.Toast.makeText(
                         context, "Refreshing weather data...", android.widget.Toast.LENGTH_SHORT,
                     ).show()
                 },
-                StandardActions.INCREMENT_COUNTER to { context ->
+                StandardActions.INCREMENT_COUNTER to { context: android.content.Context ->
                     android.widget.Toast.makeText(
                         context, "Counter incremented!", android.widget.Toast.LENGTH_SHORT,
                     ).show()
                 },
-                StandardActions.RESET_COUNTER to { context ->
+                StandardActions.RESET_COUNTER to { context: android.content.Context ->
                     android.widget.Toast.makeText(
                         context, "Counter reset!", android.widget.Toast.LENGTH_SHORT,
                     ).show()
                 },
-                StandardActions.CHECK_IN to { context ->
+                StandardActions.CHECK_IN to { context: android.content.Context ->
                     android.widget.Toast.makeText(
                         context, "Check-in recorded!", android.widget.Toast.LENGTH_SHORT,
                     ).show()
                 },
-                StandardActions.VIEW_DETAILS to { context ->
+                StandardActions.VIEW_DETAILS to { context: android.content.Context ->
                     android.widget.Toast.makeText(
                         context, "View details triggered", android.widget.Toast.LENGTH_SHORT,
                     ).show()
@@ -201,7 +198,14 @@ private fun SampleScreen(
         // ---------- Counter Widget ----------
         Text("Counter Preview (2x2)", style = MaterialTheme.typography.titleMedium)
         WidgetPreviewHost(displaySize = WidgetPreviewSizes.Medium_2x2) {
-            CounterWidgetContent(count = 3, state = WidgetUiState.Success(3))
+            // 使用标准 Compose 组件模拟 Glance CounterWidget 预览
+            androidx.compose.foundation.layout.Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text("Count: 3", style = MaterialTheme.typography.headlineMedium)
+            }
         }
 
         Button(onClick = onPinCounter) {
@@ -492,7 +496,26 @@ private fun AiResultCard(result: WidgetAiResult) {
             Text("Preview:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
             WidgetPreviewHost(displaySize = WidgetPreviewSizes.Medium_2x2) {
-                BlueprintRenderer(blueprint = result.blueprint)
+                // 使用标准 Compose 组件模拟 Blueprint 预览
+                // BlueprintRenderer 是 Glance Composable，无法在标准 Compose 中渲染
+                // 实际渲染通过 AppWidgetHostView + RemoteViews 完成
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = result.blueprint.layout.name,
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                    result.blueprint.components.take(3).forEach { component ->
+                        Text(
+                            text = "[${component.type.name}] ${component.id}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                        )
+                    }
+                }
             }
         }
     }

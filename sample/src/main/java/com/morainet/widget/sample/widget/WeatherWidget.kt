@@ -13,6 +13,7 @@ import com.morainet.widget.sample.R
 import com.morainet.widget.state.WidgetStateStore
 import com.morainet.widget.state.WidgetUiState
 import com.morainet.widget.state.WidgetUiStateDefinition
+import kotlinx.serialization.builtins.serializer
 
 /**
  * 天气数据模型。
@@ -62,7 +63,7 @@ class WeatherWidget : GlanceAppWidget() {
                 context = context,
                 glanceId = glanceId,
                 state = WidgetUiState.Success(data),
-                encode = { Json.encodeToString(it) },
+                encode = { Json.encodeToString(WeatherData.serializer(), it) },
             )
         }
 
@@ -71,7 +72,7 @@ class WeatherWidget : GlanceAppWidget() {
                 context = context,
                 glanceId = glanceId,
                 state = WidgetUiState.Error(message, retryable = true),
-                encode = { Json.encodeToString(it) },
+                encode = { Json.encodeToString(String.serializer(), it) },
             )
         }
     }

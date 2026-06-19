@@ -2,7 +2,9 @@ package com.morainet.widget.dsl
 
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
@@ -22,7 +24,6 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import androidx.glance.unit.dp
 import com.morainet.widget.core.WidgetActions
 import com.morainet.widget.state.WidgetUiState
 
@@ -196,7 +197,7 @@ fun BlueprintRenderer(
         modifier = modifier
             .fillMaxSize()
             .padding(12.dp)
-            .background(ColorProvider(bgColor)),
+            .background(ColorProvider(bgColor.toComposeColor())),
         verticalAlignment = Alignment.CenterVertically,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -484,7 +485,7 @@ private fun RenderProgress(component: WidgetComponent) {
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .height(8.dp)
-                .background(ColorProvider(0xFFDDDDDD.toInt())),
+                .background(ColorProvider(ComposeColor(0xFFDDDDDD))),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (ratio > 0f) {
@@ -492,7 +493,7 @@ private fun RenderProgress(component: WidgetComponent) {
                     modifier = GlanceModifier
                         .fillMaxWidth()
                         .height(8.dp)
-                        .background(ColorProvider(0xFF1A73E8.toInt()))
+                        .background(ColorProvider(ComposeColor(0xFF1A73E8)))
                         .width((ratio * 100).dp.coerceAtLeast(1.dp)),
                 ) {
                 }
@@ -573,7 +574,7 @@ private fun RenderChart(component: WidgetComponent) {
                     modifier = GlanceModifier
                         .fillMaxWidth()
                         .height(12.dp)
-                        .background(ColorProvider(color))
+                        .background(ColorProvider(color.toComposeColor()))
                         .width((ratio * 100).dp.coerceAtLeast(2.dp)),
                 ) {
                 }
@@ -612,3 +613,12 @@ private fun resolveComponents(
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// 工具函数
+// ---------------------------------------------------------------------------
+
+/**
+ * 将 Android [android.graphics.Color] int 值转换为 Compose [ComposeColor]。
+ */
+private fun Int.toComposeColor(): ComposeColor = ComposeColor(this)

@@ -31,7 +31,7 @@ object WidgetBlueprintParser {
     }
 
     fun toJson(blueprint: WidgetBlueprint): String {
-        return json.encodeToString(blueprint)
+        return json.encodeToString(WidgetBlueprint.serializer(), blueprint)
     }
 
     private fun mapToJsonElement(map: Map<String, Any?>): JsonElement {

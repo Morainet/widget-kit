@@ -109,12 +109,14 @@ class GeminiWidgetAiGenerator(
 
     private fun extractResponseText(response: JsonObject): String {
         return try {
-            response
-                .jsonArray("candidates")
+            response["candidates"]
+                ?.jsonArray
                 ?.getOrNull(0)
                 ?.jsonObject
-                ?.jsonObject("content")
-                ?.jsonArray("parts")
+                ?.get("content")
+                ?.jsonObject
+                ?.get("parts")
+                ?.jsonArray
                 ?.getOrNull(0)
                 ?.jsonObject
                 ?.get("text")
@@ -130,8 +132,8 @@ class GeminiWidgetAiGenerator(
 
     private fun extractTokenCount(response: JsonObject): Int? {
         return try {
-            response
-                .jsonObject("usageMetadata")
+            response["usageMetadata"]
+                ?.jsonObject
                 ?.get("totalTokenCount")
                 ?.jsonPrimitive
                 ?.int

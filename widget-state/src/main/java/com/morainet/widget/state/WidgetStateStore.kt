@@ -34,7 +34,9 @@ object WidgetStateStore {
     ) {
         val snapshot = WidgetUiStateCodec.toSnapshot(state, encode)
         updateAppWidgetState(context, WidgetUiStateDefinition, glanceId) { prefs ->
-            prefs[KeyUiStateJson] = json.encodeToString(snapshot)
+            prefs.toMutablePreferences().apply {
+                this[KeyUiStateJson] = json.encodeToString(snapshot)
+            }
         }
     }
 

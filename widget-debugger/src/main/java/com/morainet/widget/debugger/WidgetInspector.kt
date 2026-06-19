@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -176,11 +174,11 @@ fun WidgetDebuggerPanel(
         }
 
         Text("Update Timeline", style = MaterialTheme.typography.labelLarge)
-        LazyColumn(
+        Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            items(timeline.takeLast(20).reversed()) { event ->
+            timeline.takeLast(20).reversed().forEach { event ->
                 Text(
                     text = "${formatTime(event.timestamp)} #${event.widgetId} ${event.source}",
                     style = MaterialTheme.typography.bodySmall,
