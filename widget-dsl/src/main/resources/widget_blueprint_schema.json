@@ -1,0 +1,218 @@
+{
+  "$id": "https://widget-kit.morainet.com/schemas/widget_blueprint.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WidgetBlueprint",
+  "description": "Widget DSL 根模型 Schema。用于校验 WidgetBlueprint 的 JSON/YAML 配置文件，AI 生成器与手写配置共用此 Schema。",
+  "type": "object",
+  "properties": {
+    "meta": {
+      "type": "object",
+      "title": "WidgetMeta",
+      "description": "Widget 元数据信息",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "名称",
+          "description": "Widget 名称，必填",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "description": {
+          "type": "string",
+          "title": "描述",
+          "description": "Widget 描述信息",
+          "default": ""
+        },
+        "minSdk": {
+          "type": "integer",
+          "title": "最小 SDK 版本",
+          "description": "最低支持的 Android SDK 版本",
+          "minimum": 26,
+          "default": 26
+        },
+        "targetSurfaces": {
+          "type": "array",
+          "title": "目标表面",
+          "description": "Widget 适用的目标设备表面",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["PHONE", "WEAR", "AUTO"]
+          },
+          "default": ["PHONE"]
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": false
+    },
+    "layout": {
+      "type": "string",
+      "title": "布局类型",
+      "description": "Widget 的布局模板类型",
+      "enum": [
+        "COUNTER_2X2",
+        "SINGLE_ENTITY_2X2",
+        "SINGLE_ENTITY_2X1",
+        "LIST_4X2",
+        "STREAK_2X2",
+        "CUSTOM"
+      ]
+    },
+    "components": {
+      "type": "array",
+      "title": "组件列表",
+      "description": "Widget 中包含的 UI 组件",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "title": "WidgetComponent",
+        "description": "单个 UI 组件定义",
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "组件类型",
+            "description": "UI 组件的类型",
+            "enum": ["TEXT", "IMAGE", "BUTTON", "PROGRESS", "LIST", "CHART"]
+          },
+          "id": {
+            "type": "string",
+            "title": "组件 ID",
+            "description": "组件的唯一标识符，只能包含字母、数字和下划线",
+            "minLength": 1,
+            "maxLength": 30,
+            "pattern": "^[A-Za-z0-9_]+$"
+          },
+          "props": {
+            "type": "object",
+            "title": "属性",
+            "description": "组件的额外属性键值对",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {}
+          }
+        },
+        "required": ["type", "id"],
+        "additionalProperties": false
+      }
+    },
+    "state": {
+      "oneOf": [
+        {
+          "type": "object",
+          "title": "WidgetStateConfig",
+          "description": "Widget 状态配置",
+          "properties": {
+            "defaultState": {
+              "type": "string",
+              "title": "默认状态",
+              "description": "Widget 的默认展示状态",
+              "enum": ["loading", "success", "error"],
+              "default": "loading"
+            },
+            "onError": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "title": "ErrorConfig",
+                  "description": "错误状态配置",
+                  "properties": {
+                    "layout": {
+                      "type": "string",
+                      "title": "错误布局",
+                      "description": "错误状态的布局方式",
+                      "default": "compact"
+                    },
+                    "showRetry": {
+                      "type": "boolean",
+                      "title": "显示重试",
+                      "description": "是否显示重试按钮",
+                      "default": true
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                { "type": "null" }
+              ],
+              "default": null
+            }
+          },
+          "additionalProperties": false
+        },
+        { "type": "null" }
+      ],
+      "default": null
+    },
+    "theme": {
+      "oneOf": [
+        {
+          "type": "object",
+          "title": "WidgetTheme",
+          "description": "Widget 主题配置",
+          "properties": {
+            "style": {
+              "type": "string",
+              "title": "主题风格",
+              "description": "主题样式名称",
+              "enum": ["material_you", "material_3", "custom"],
+              "default": "material_you"
+            },
+            "primaryColor": {
+              "type": ["string", "null"],
+              "title": "主色调",
+              "description": "主题主色调（十六进制颜色值），为 null 时使用系统默认",
+              "default": null
+            },
+            "useDynamicColor": {
+              "type": "boolean",
+              "title": "使用动态颜色",
+              "description": "是否启用 Material You 动态颜色",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        },
+        { "type": "null" }
+      ],
+      "default": null
+    },
+    "animations": {
+      "type": "array",
+      "title": "动画配置列表",
+      "description": "Widget 的动画效果配置",
+      "items": {
+        "type": "object",
+        "title": "WidgetAnimationConfig",
+        "description": "单个动画配置",
+        "properties": {
+          "preset": {
+            "type": "string",
+            "title": "动画预设",
+            "description": "动画预设类型",
+            "enum": ["fade", "pulse", "counter_tick", "snapping_scroll"]
+          },
+          "targetId": {
+            "type": ["string", "null"],
+            "title": "目标组件 ID",
+            "description": "动画作用的目标组件 ID，为 null 时作用于整个 Widget",
+            "default": null
+          },
+          "durationMs": {
+            "type": "integer",
+            "title": "动画时长",
+            "description": "动画持续时间（毫秒）",
+            "minimum": 50,
+            "maximum": 5000,
+            "default": 300
+          }
+        },
+        "required": ["preset"],
+        "additionalProperties": false
+      },
+      "default": []
+    }
+  },
+  "required": ["meta", "layout", "components"],
+  "additionalProperties": false
+}

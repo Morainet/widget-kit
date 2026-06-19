@@ -117,6 +117,100 @@ object PromptTemplateEngine {
         return sb.toString()
     }
 
+    // ---- Vision Prompt（Image → WidgetBlueprint） ----
+
+    /**
+     * 编译 Vision Prompt：用于 Gemini Vision API 从截图/设计稿生成 WidgetBlueprint。
+     */
+    fun compileVisionPrompt(
+        hint: String? = null,
+        constraints: AiGenerationConstraints? = null,
+        mimeType: String = "image/png",
+    ): AiPrompt {
+        val systemPrompt = buildVisionSystemPrompt(constraints)
+        val userMessage = buildVisionUserMessage(hint, constraints, mimeType)
+        return AiPrompt(system = systemPrompt, user = userMessage)
+    }
+
+    private fun buildVisionSystemPrompt(constraints: AiGenerationConstraints?): String {
+        val sb = StringBuilder()
+        sb.appendLine("You are a Widget Blueprint generator for Android Widget Kit.")
+        sb.appendLine("Your task is to analyze the provided image (a Widget screenshot or design mockup)")
+        sb.appendLine("and convert it into a WidgetBlueprint JSON.")
+        sb.appendLine()
+        sb.appendLine("## Steps")
+        sb.appendLine("1. Identify the Widget layout type from the image (2x2, 4x2, 2x1, etc.)")
+        sb.appendLine("2. Identify all visible UI components (text, images, buttons, progress bars, lists, charts)")
+        sb.appendLine("3. For each component, determine its type, a semantic id, and relevant props")
+        sb.appendLine("4. Output ONLY the WidgetBlueprint JSON")
+        sb.appendLine()
+        sb.appendLine("## Schema")
+        sb.appendLine("```json")
+        sb.appendLine(SCHEMA_JSON)
+        sb.appendLine("```")
+        sb.appendLine()
+
+        if (constraints?.preferredLayout != null) {
+            sb.appendLine("PREFERRED layout: ${constraints.preferredLayout.name}")
+        } else {
+            sb.appendLine("Available layouts: ${WidgetLayout.entries.joinToString { it.name }}")
+        }
+        sb.appendLine()
+
+        val allowedTypes = constraints?.allowedComponentTypes ?: ComponentType.entries.toSet()
+        sb.appendLine("Allowed component types: ${allowedTypes.joinToString { it.name }}")
+        sb.appendLine()
+        sb.appendLine(LAYOUT_REFERENCE)
+        sb.appendLine()
+        sb.appendLine(COMPONENT_REFERENCE)
+        sb.appendLine()
+        sb.appendLine("## Rules")
+        sb.appendLine("- Identify the layout based on the image's visible structure")
+        sb.appendLine("- Every component MUST have a unique `id` (snake_case)")
+        sb.appendLine("- Match component types to what you see in the image")
+        sb.appendLine("- If text is visible, create TEXT components with appropriate ids")
+        sb.appendLine("- If icons/images are visible, create IMAGE components")
+        sb.appendLine("- If buttons are visible, create BUTTON components with action props")
+        sb.appendLine("- Target surfaces default to [\"PHONE\"]")
+        sb.appendLine("- minSdk defaults to 26")
+        sb.appendLine("- Output ONLY the JSON object, no markdown fences, no explanations")
+        sb.appendLine("- If you cannot identify the layout, use CUSTOM")
+
+        return sb.toString()
+    }
+
+    private fun buildVisionUserMessage(
+        hint: String?,
+        constraints: AiGenerationConstraints?,
+        mimeType: String,
+    ): String {
+        val sb = StringBuilder()
+        sb.appendLine("Analyze the attached $mimeType image and generate a WidgetBlueprint JSON.")
+        sb.appendLine()
+
+        if (!hint.isNullOrBlank()) {
+            sb.appendLine("Context hint: \"$hint\"")
+            sb.appendLine()
+        }
+
+        sb.appendLine("Look at the visual layout in the image:")
+        sb.appendLine("- How many cells wide/tall is this widget?")
+        sb.appendLine("- What components do you see? (text labels, icons, buttons, etc.)")
+        sb.appendLine("- What is the approximate layout structure?")
+        sb.appendLine()
+        sb.appendLine("Generate the WidgetBlueprint JSON now.")
+
+        if (!constraints?.context.isNullOrEmpty()) {
+            sb.appendLine()
+            sb.appendLine("Additional context:")
+            constraints.context.forEach { (k, v) ->
+                sb.appendLine("- $k: $v")
+            }
+        }
+
+        return sb.toString()
+    }
+
     // ---- Schema & Reference (编译时常量) ----
 
     private val SCHEMA_JSON = """

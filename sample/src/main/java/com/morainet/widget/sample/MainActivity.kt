@@ -36,9 +36,13 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.morainet.widget.ai.AiGenerationConstraints
+import com.morainet.widget.ai.AppFunctionRegistry
+import com.morainet.widget.ai.AppFunctions
+import com.morainet.widget.ai.ImageSource
+import com.morainet.widget.ai.MockImageToWidgetGenerator
 import com.morainet.widget.ai.MockWidgetAiGenerator
 import com.morainet.widget.ai.QualityEvaluator
+import com.morainet.widget.ai.StandardActions
 import com.morainet.widget.ai.WidgetAiPipeline
 import com.morainet.widget.ai.WidgetAiResult
 import com.morainet.widget.core.WidgetPinHelper
@@ -46,6 +50,7 @@ import com.morainet.widget.debugger.WidgetDebugSnapshot
 import com.morainet.widget.debugger.WidgetDebuggerPanel
 import com.morainet.widget.debugger.WidgetInspector
 import com.morainet.widget.dsl.BlueprintRenderer
+import com.morainet.widget.dsl.DrawableResolver
 import com.morainet.widget.dsl.WidgetBlueprintParser
 import com.morainet.widget.preview.WidgetPreviewHost
 import com.morainet.widget.preview.WidgetPreviewSizes
@@ -61,6 +66,22 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 注册 AppFunctions（AI-Ready 桥接）
+        registerAppFunctions()
+
+        // 注册图标映射
+        DrawableResolver.registerMapping(
+            mapOf(
+                "weather_sunny" to R.drawable.ic_weather_sunny,
+                "weather_cloudy" to R.drawable.ic_weather_cloudy,
+                "weather_rainy" to R.drawable.ic_weather_rainy,
+                "weather_snow" to R.drawable.ic_weather_snow,
+                "weather_thunder" to R.drawable.ic_weather_thunder,
+                "weather_fog" to R.drawable.ic_weather_fog,
+                "weather_wind" to R.drawable.ic_weather_wind,
+            ),
+        )
 
         seedDebuggerSnapshots()
 
@@ -83,6 +104,45 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun registerAppFunctions() {
+        AppFunctionRegistry.register(object : AppFunctions {
+            override val bindings = mapOf(
+                StandardActions.OPEN_APP to { context ->
+                    // Already in app, could navigate to a specific screen
+                    android.widget.Toast.makeText(
+                        context, "Open App action triggered", android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                },
+                StandardActions.REFRESH_DATA to { context ->
+                    WeatherRefreshWorker.trigger(context)
+                    android.widget.Toast.makeText(
+                        context, "Refreshing weather data...", android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                },
+                StandardActions.INCREMENT_COUNTER to { context ->
+                    android.widget.Toast.makeText(
+                        context, "Counter incremented!", android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                },
+                StandardActions.RESET_COUNTER to { context ->
+                    android.widget.Toast.makeText(
+                        context, "Counter reset!", android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                },
+                StandardActions.CHECK_IN to { context ->
+                    android.widget.Toast.makeText(
+                        context, "Check-in recorded!", android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                },
+                StandardActions.VIEW_DETAILS to { context ->
+                    android.widget.Toast.makeText(
+                        context, "View details triggered", android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                },
+            )
+        })
     }
 
     private fun seedDebuggerSnapshots() {
@@ -153,7 +213,6 @@ private fun SampleScreen(
         // ---------- Weather Widget ----------
         Text("Weather Widget", style = MaterialTheme.typography.titleMedium)
 
-        // 位置设置
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -197,7 +256,6 @@ private fun SampleScreen(
             }
         }
 
-        // 刷新按钮
         Button(onClick = onRefreshWeather, modifier = Modifier.fillMaxWidth()) {
             Text("Refresh Weather Widget")
         }
@@ -205,7 +263,7 @@ private fun SampleScreen(
         HorizontalDivider()
 
         // ---------- AI Widget Generator ----------
-        Text("🤖 AI Widget Generator", style = MaterialTheme.typography.titleMedium)
+        Text("AI Widget Generator", style = MaterialTheme.typography.titleMedium)
         Text("Describe a widget in natural language and generate its Blueprint", style = MaterialTheme.typography.bodySmall)
 
         OutlinedTextField(
@@ -225,12 +283,10 @@ private fun SampleScreen(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             val quickPrompts = listOf(
-                "天气 Widget" to "一个 2x2 天气 Widget，显示城市名、温度和天气图标",
+                "天气" to "一个 2x2 天气 Widget，显示城市名、温度和天气图标",
                 "计数器" to "一个计数器 Widget，有 + 和 Reset 按钮",
-                "待办列表" to "一个待办事项列表 Widget，显示前3个任务",
-                "连续打卡" to "一个连续打卡 Widget，显示打卡天数",
             )
-            quickPrompts.take(2).forEach { (label, prompt) ->
+            quickPrompts.forEach { (label, prompt) ->
                 Button(
                     onClick = { aiPrompt = prompt },
                     colors = ButtonDefaults.buttonColors(
@@ -247,12 +303,10 @@ private fun SampleScreen(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             val quickPrompts = listOf(
-                "天气 Widget" to "一个 2x2 天气 Widget，显示城市名、温度和天气图标",
-                "计数器" to "一个计数器 Widget，有 + 和 Reset 按钮",
-                "待办列表" to "一个待办事项列表 Widget，显示前3个任务",
-                "连续打卡" to "一个连续打卡 Widget，显示打卡天数",
+                "待办" to "一个待办事项列表 Widget，显示前3个任务",
+                "打卡" to "一个连续打卡 Widget，显示打卡天数和进度条",
             )
-            quickPrompts.drop(2).forEach { (label, prompt) ->
+            quickPrompts.forEach { (label, prompt) ->
                 Button(
                     onClick = { aiPrompt = prompt },
                     colors = ButtonDefaults.buttonColors(
@@ -317,6 +371,35 @@ private fun SampleScreen(
 
         HorizontalDivider()
 
+        // ---------- AppFunctions 信息 ----------
+        Text("AppFunctions (AI-Ready)", style = MaterialTheme.typography.titleMedium)
+        Text("Actions available for AI-generated BUTTON components:", style = MaterialTheme.typography.bodySmall)
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                val actions = AppFunctionRegistry.availableActions()
+                actions.forEach { action ->
+                    val isRegistered = AppFunctionRegistry.hasAction(action)
+                    val icon = if (isRegistered) "✓" else "✗"
+                    Text(
+                        text = "  $icon $action",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                }
+                if (actions.isEmpty()) {
+                    Text("No actions registered", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+
+        HorizontalDivider()
+
         // ---------- Debugger ----------
         Text("Widget Debugger", style = MaterialTheme.typography.titleMedium)
         WidgetDebuggerPanel(modifier = Modifier.fillMaxWidth())
@@ -356,7 +439,7 @@ private fun AiResultCard(result: WidgetAiResult) {
                 Text("Model: ${result.metadata.model}", style = MaterialTheme.typography.labelSmall)
                 Text("Latency: ${result.metadata.latencyMs}ms", style = MaterialTheme.typography.labelSmall)
                 if (result.metadata.isFallback) {
-                    Text("⚠ fallback", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    Text("fallback", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                 }
             }
 
@@ -366,8 +449,14 @@ private fun AiResultCard(result: WidgetAiResult) {
             Text("Layout: ${result.blueprint.layout.name}", style = MaterialTheme.typography.bodySmall)
             Text("Components: ${result.blueprint.components.size}", style = MaterialTheme.typography.bodySmall)
             result.blueprint.components.forEach { component ->
+                val actionTag = component.props["action"]
+                val actionNote = if (actionTag != null && AppFunctionRegistry.hasAction(actionTag)) {
+                    " [bound: $actionTag]"
+                } else if (actionTag != null) {
+                    " [unbound: $actionTag]"
+                } else ""
                 Text(
-                    text = "  - [${component.type.name}] ${component.id}",
+                    text = "  - [${component.type.name}] ${component.id}$actionNote",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -377,7 +466,7 @@ private fun AiResultCard(result: WidgetAiResult) {
             // 质量检查详情
             Text("Quality Checks:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             quality.checks.forEach { check ->
-                val icon = if (check.passed >= 0.8f) "✓" else if (check.passed >= 0.5f) "~" else "✗"
+                val icon = if (check.passed >= 0.8f) "+" else if (check.passed >= 0.5f) "~" else "-"
                 Text(
                     text = "  $icon ${check.name}: ${check.detail}",
                     style = MaterialTheme.typography.bodySmall,
@@ -387,7 +476,19 @@ private fun AiResultCard(result: WidgetAiResult) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 预览
+            // Blueprint JSON 预览
+            Text("Blueprint JSON:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Text(
+                text = WidgetBlueprintParser.toJson(result.blueprint),
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 10.sp,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 视觉预览
             Text("Preview:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(4.dp))
             WidgetPreviewHost(displaySize = WidgetPreviewSizes.Medium_2x2) {

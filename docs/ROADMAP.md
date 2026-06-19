@@ -53,14 +53,16 @@ Widget Kit  →   Widget AI      →    完整生态
 
 ### v0.2.0-beta
 
-- [ ] Image → WidgetBlueprint（参考 Widget2Code）
-- [ ] 10 种 canonical layout 模板约束
-- [ ] 生成质量评估与回退机制
+- [x] Image → WidgetBlueprint（Gemini Vision API + Mock 回退）
+- [x] 10 种 canonical layout 模板约束（PromptTemplateEngine 注入）
+- [x] 生成质量评估与回退机制（QualityEvaluator + WidgetAiPipeline）
 
 ### v0.2.0
 
-- [ ] AppFunctions Scaffold（AI-Ready 桥接）
-- [ ] CLI 工具：`morainet-widget generate "2x2 weather widget"`
+- [x] AppFunctions Scaffold（AppFunctionRegistry + StandardActions）
+- [x] CLI 工具：`morainet-widget generate "2x2 weather widget"`
+- [x] JSON Schema 校验文件（widget_blueprint_schema.json，Draft-07）
+- [ ] Maven Central 实际发布
 
 ---
 

@@ -412,20 +412,22 @@ val result = pipeline.generate("一个 2x2 天气 Widget")
 
 **Phase 2 已实现**：
 - [x] `widget-ai` 模块搭建
-- [x] Prompt 模板引擎（Schema 注入 + Layout 参考 + 组件文档）
+- [x] Prompt 模板引擎（Schema 注入 + Layout 参考 + 组件文档 + Vision Prompt）
 - [x] `WidgetAiGenerator` 接口 + `GeminiWidgetAiGenerator`（真实 API）
 - [x] `MockWidgetAiGenerator`（10 种预设模板，关键词匹配）
 - [x] `QualityEvaluator`（5 维度评分）
 - [x] `ResultParser`（LLM 输出 → JSON 提取 → Blueprint 解析）
 - [x] `WidgetAiPipeline`（primary + fallback + 质量阈值）
-- [x] Sample 集成（AI 生成 UI + 4 个快速 Prompt + Blueprint 预览）
+- [x] `ImageToWidgetGenerator` 接口 + `GeminiImageToWidgetGenerator`（Gemini Vision API 多模态）
+- [x] `MockImageToWidgetGenerator`（基于文件名/关键词的 fallback）
+- [x] `AppFunctions` + `AppFunctionRegistry` + `StandardActions`（AI-Ready 桥接层）
+- [x] CLI 工具：`WidgetCli`（generate / validate / help 子命令）
+- [x] JSON Schema 校验文件（`widget-dsl/src/main/resources/widget_blueprint_schema.json`，Draft-07）
+- [x] Sample 集成（AI 生成 UI + 4 个快速 Prompt + Blueprint JSON 预览 + AppFunction 绑定状态 + 图标映射）
 
 **Phase 2 待完成**：
-- [ ] Image → WidgetBlueprint（参考 Widget2Code 论文）
-- [ ] 10 种 canonical layout 模板约束
-- [ ] AppFunctions Scaffold（AI-Ready 桥接）
-- [ ] CLI 工具：`morainet-widget generate "2x2 weather widget"`
-- [ ] JSON Schema 校验文件
+- [ ] Widget Studio AI 插件（生成 → 预览 → 导出）
+- [ ] 10 种 canonical layout 模板约束引擎（运行时校验 layout → 组件类型匹配）
 
 ---
 
@@ -569,18 +571,20 @@ com.morainet.widget.{module}.{feature}
 
 ---
 
-## 9. 与 Phase 2（AI Widget）的接口预留
+## 9. Phase 2（AI Widget）— 已实现
 
-Phase 2 的 `widget-ai` 模块已启动，核心契约：
+Phase 2 的 `widget-ai` 模块核心契约：
 
 ```text
 Prompt / Image
     ↓
 WidgetAiPipeline (widget-ai)
-    ├── PromptTemplateEngine（编译 System + User Prompt）
+    ├── PromptTemplateEngine（编译 System + User Prompt + Vision Prompt）
     ├── WidgetAiGenerator（Gemini API / Mock 回退）
+    ├── ImageToWidgetGenerator（Gemini Vision API / Mock 回退）
     ├── ResultParser（LLM 输出 → WidgetBlueprint）
-    └── QualityEvaluator（5 维度质量评分）
+    ├── QualityEvaluator（5 维度质量评分）
+    └── AppFunctionRegistry（AI-Ready 桥接，BUTTON action 自动绑定）
     ↓
 WidgetBlueprint (widget-dsl)
     ↓
