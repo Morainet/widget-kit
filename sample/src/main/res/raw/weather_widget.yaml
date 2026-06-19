@@ -30,8 +30,9 @@ state:
     showRetry: true
 
 theme:
-  style: material_you
-  useDynamicColor: true
+  style: dark_card
+  useDynamicColor: false
+  primaryColor: "#CC1A1A2E"
 
 animations:
   - preset: FADE

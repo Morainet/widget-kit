@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 主题色 -->
+    <color name="widget_bg_dark">#CC1A1A2E</color>
+
+    <!-- 文字色 -->
+    <color name="widget_text_white">#FFFFFFFF</color>
+    <color name="widget_text_label">#FF8888AA</color>
+    <color name="widget_text_hint">#FF6666AA</color>
+    <color name="widget_text_error">#FFFF6B6B</color>
+    <color name="widget_text_loading">#FFB0B0B0</color>
+    <color name="widget_text_success">#FF4CAF50</color>
+    <color name="widget_text_warning">#FFFFC107</color>
+    <color name="widget_text_gray">#FF888888</color>
+    <color name="widget_text_light_gray">#FFAAAAAA</color>
+    <color name="widget_text_json_preview">#FF88AACC</color>
+    <color name="widget_text_section_label">#FFCCCCDD</color>
+
+    <!-- 强调色 -->
+    <color name="widget_accent">#FF66AAFF</color>
+
+    <!-- 卡片/面板 -->
+    <color name="widget_card_bg">#22FFFFFF</color>
+    <color name="widget_card_error_bg">#44FF4444</color>
+    <color name="widget_button_quick_bg">#333366AA</color>
+
+    <!-- 背景渐变 -->
+    <color name="widget_gradient_top">#FF1A1A2E</color>
+    <color name="widget_gradient_mid">#FF16213E</color>
+    <color name="widget_gradient_bottom">#FF0F3460</color>
+
+    <!-- widget_loading.xml 使用的颜色 -->
+    <color name="widget_loading_bg">#CC1A1A2E</color>
+    <color name="widget_loading_text">#88AACC</color>
+</resources>

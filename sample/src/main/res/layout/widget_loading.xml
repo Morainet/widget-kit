@@ -3,11 +3,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/widget_loading_bg"
+    android:padding="12dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/widget_loading" />
+        android:text="@string/widget_loading"
+        android:textColor="@color/widget_loading_text"
+        android:textSize="14sp" />
 
 </LinearLayout>

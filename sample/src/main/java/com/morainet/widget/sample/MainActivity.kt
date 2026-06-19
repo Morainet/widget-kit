@@ -3,7 +3,9 @@ package com.morainet.widget.sample
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,15 +13,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -32,8 +41,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.morainet.widget.ai.AppFunctionRegistry
@@ -184,253 +199,419 @@ private fun SampleScreen(
         WidgetAiPipeline(fallback = MockWidgetAiGenerator())
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        // ---------- 标题 ----------
-        Text("Morainet Widget Kit Sample", style = MaterialTheme.typography.headlineSmall)
-        Text("Add Counter / Weather widgets from launcher", style = MaterialTheme.typography.bodyMedium)
+    // 从资源文件加载所有颜色
+    val bgDark = colorResource(R.color.widget_bg_dark)
+    val textLabel = colorResource(R.color.widget_text_label)
+    val textHint = colorResource(R.color.widget_text_hint)
+    val textError = colorResource(R.color.widget_text_error)
+    val textSuccess = colorResource(R.color.widget_text_success)
+    val textWarning = colorResource(R.color.widget_text_warning)
+    val textGray = colorResource(R.color.widget_text_gray)
+    val textLightGray = colorResource(R.color.widget_text_light_gray)
+    val textJsonPreview = colorResource(R.color.widget_text_json_preview)
+    val textSectionLabel = colorResource(R.color.widget_text_section_label)
+    val accent = colorResource(R.color.widget_accent)
+    val cardBg = colorResource(R.color.widget_card_bg)
+    val cardErrorBg = colorResource(R.color.widget_card_error_bg)
+    val buttonQuickBg = colorResource(R.color.widget_button_quick_bg)
 
-        // ---------- Counter Widget ----------
-        Text("Counter Preview (2x2)", style = MaterialTheme.typography.titleMedium)
-        WidgetPreviewHost(displaySize = WidgetPreviewSizes.Medium_2x2) {
-            // 使用标准 Compose 组件模拟 Glance CounterWidget 预览
-            androidx.compose.foundation.layout.Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text("Count: 3", style = MaterialTheme.typography.headlineMedium)
-            }
-        }
+    // 深色主题配色
+    val bgGradient = Brush.verticalGradient(
+        colors = listOf(
+            colorResource(R.color.widget_gradient_top),
+            colorResource(R.color.widget_gradient_mid),
+            colorResource(R.color.widget_gradient_bottom),
+        ),
+    )
 
-        Button(onClick = onPinCounter) {
-            Text("Pin Counter Widget")
-        }
-
-        HorizontalDivider()
-
-        // ---------- Weather Widget ----------
-        Text("Weather Widget", style = MaterialTheme.typography.titleMedium)
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text("Location", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    OutlinedTextField(
-                        value = latInput,
-                        onValueChange = { latInput = it },
-                        label = { Text("Latitude") },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                    )
-                    OutlinedTextField(
-                        value = lonInput,
-                        onValueChange = { lonInput = it },
-                        label = { Text("Longitude") },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = {
-                        latInput.toDoubleOrNull()?.let { lat ->
-                            lonInput.toDoubleOrNull()?.let { lon ->
-                                onLocationChange(lat, lon)
-                            }
-                        }
-                    },
-                ) {
-                    Text("Update Location & Refresh")
-                }
-            }
-        }
-
-        Button(onClick = onRefreshWeather, modifier = Modifier.fillMaxWidth()) {
-            Text("Refresh Weather Widget")
-        }
-
-        HorizontalDivider()
-
-        // ---------- AI Widget Generator ----------
-        Text("AI Widget Generator", style = MaterialTheme.typography.titleMedium)
-        Text("Describe a widget in natural language and generate its Blueprint", style = MaterialTheme.typography.bodySmall)
-
-        OutlinedTextField(
-            value = aiPrompt,
-            onValueChange = { aiPrompt = it },
-            label = { Text("Prompt") },
-            placeholder = { Text("e.g. 一个 2x2 天气 Widget，显示城市、温度和图标") },
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 2,
-            maxLines = 4,
-        )
-
-        // 预设 Prompt 快速选择
-        Text("Quick Prompts:", style = MaterialTheme.typography.labelSmall)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            val quickPrompts = listOf(
-                "天气" to "一个 2x2 天气 Widget，显示城市名、温度和天气图标",
-                "计数器" to "一个计数器 Widget，有 + 和 Reset 按钮",
+            // ---------- 标题 ----------
+            Text(
+                "Widget Kit Sample",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
             )
-            quickPrompts.forEach { (label, prompt) ->
-                Button(
-                    onClick = { aiPrompt = prompt },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    ),
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(label, fontSize = 12.sp, maxLines = 1)
-                }
-            }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            val quickPrompts = listOf(
-                "待办" to "一个待办事项列表 Widget，显示前3个任务",
-                "打卡" to "一个连续打卡 Widget，显示打卡天数和进度条",
+            Text(
+                "Add Counter / Weather widgets from your launcher",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            quickPrompts.forEach { (label, prompt) ->
-                Button(
-                    onClick = { aiPrompt = prompt },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    ),
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(label, fontSize = 12.sp, maxLines = 1)
-                }
-            }
-        }
 
-        Button(
-            onClick = {
-                scope.launch {
-                    aiLoading = true
-                    aiError = null
-                    try {
-                        val result = withContext(Dispatchers.IO) {
-                            pipeline.generate(aiPrompt)
-                        }
-                        aiResult = result
-                    } catch (e: Exception) {
-                        aiError = e.message ?: "Unknown error"
-                    } finally {
-                        aiLoading = false
+            // ---------- Counter Widget ----------
+            SectionHeader(
+                title = "Counter Widget",
+                subtitle = "Tap the counter on your home screen to +1",
+                accent = accent,
+                textLabel = textLabel,
+            )
+            WidgetPreviewHost(displaySize = WidgetPreviewSizes.Medium_2x2) {
+                // 模拟 Glance CounterWidget 的深色半透明背景预览
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(bgDark),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            "TAP COUNTER",
+                            color = textLabel,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "3",
+                            color = Color.White,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Tap to +1",
+                            color = textHint,
+                            fontSize = 11.sp,
+                        )
                     }
                 }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !aiLoading,
-        ) {
-            if (aiLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.width(20.dp).height(20.dp),
-                    strokeWidth = 2.dp,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
             }
-            Text(if (aiLoading) "Generating..." else "Generate Widget Blueprint")
-        }
 
-        // AI 生成结果
-        aiResult?.let { result ->
-            AiResultCard(result)
-        }
+            Button(
+                onClick = onPinCounter,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Pin Counter Widget")
+            }
 
-        aiError?.let { error ->
+            HorizontalDivider(color = cardBg)
+
+            // ---------- Weather Widget ----------
+            SectionHeader(
+                title = "Weather Widget",
+                subtitle = "Update location to fetch real weather data",
+                accent = accent,
+                textLabel = textLabel,
+            )
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                ),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(12.dp),
             ) {
-                Text(
-                    text = "Error: $error",
-                    modifier = Modifier.padding(12.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        "Location",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = textSectionLabel,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = latInput,
+                            onValueChange = { latInput = it },
+                            label = { Text("Latitude") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                        )
+                        OutlinedTextField(
+                            value = lonInput,
+                            onValueChange = { lonInput = it },
+                            label = { Text("Longitude") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            latInput.toDoubleOrNull()?.let { lat ->
+                                lonInput.toDoubleOrNull()?.let { lon ->
+                                    onLocationChange(lat, lon)
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Update Location & Refresh")
+                    }
+                }
+            }
+
+            Button(
+                onClick = onRefreshWeather,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Refresh Weather Widget")
+            }
+
+            HorizontalDivider(color = cardBg)
+
+            // ---------- AI Widget Generator ----------
+            SectionHeader(
+                title = "AI Widget Generator",
+                subtitle = "Describe a widget in natural language",
+                accent = accent,
+                textLabel = textLabel,
+            )
+
+            OutlinedTextField(
+                value = aiPrompt,
+                onValueChange = { aiPrompt = it },
+                label = { Text("Prompt") },
+                placeholder = { Text("e.g. 一个 2x2 天气 Widget，显示城市、温度和图标") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+                maxLines = 4,
+            )
+
+            // 预设 Prompt 快速选择
+            Text(
+                "Quick Prompts",
+                style = MaterialTheme.typography.labelSmall,
+                color = textLabel,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                listOf(
+                    "天气" to "一个 2x2 天气 Widget，显示城市名、温度和天气图标",
+                    "计数器" to "一个计数器 Widget，有 + 和 Reset 按钮",
+                ).forEach { (label, prompt) ->
+                    Button(
+                        onClick = { aiPrompt = prompt },
+                        colors = ButtonDefaults.buttonColors(containerColor = buttonQuickBg),
+                        modifier = Modifier.weight(1f),
+                        contentPadding = ButtonDefaults.TextButtonContentPadding,
+                    ) {
+                        Text(label, fontSize = 12.sp, maxLines = 1)
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                listOf(
+                    "待办" to "一个待办事项列表 Widget，显示前3个任务",
+                    "打卡" to "一个连续打卡 Widget，显示打卡天数和进度条",
+                ).forEach { (label, prompt) ->
+                    Button(
+                        onClick = { aiPrompt = prompt },
+                        colors = ButtonDefaults.buttonColors(containerColor = buttonQuickBg),
+                        modifier = Modifier.weight(1f),
+                        contentPadding = ButtonDefaults.TextButtonContentPadding,
+                    ) {
+                        Text(label, fontSize = 12.sp, maxLines = 1)
+                    }
+                }
+            }
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        aiLoading = true
+                        aiError = null
+                        try {
+                            val result = withContext(Dispatchers.IO) {
+                                pipeline.generate(aiPrompt)
+                            }
+                            aiResult = result
+                        } catch (e: Exception) {
+                            aiError = e.message ?: "Unknown error"
+                        } finally {
+                            aiLoading = false
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !aiLoading,
+            ) {
+                if (aiLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(if (aiLoading) "Generating..." else "Generate Widget Blueprint")
+            }
+
+            // AI 生成结果
+            aiResult?.let { result ->
+                AiResultCard(
+                    result = result,
+                    textSuccess = textSuccess,
+                    textWarning = textWarning,
+                    textError = textError,
+                    textLabel = textLabel,
+                    textLightGray = textLightGray,
+                    textSectionLabel = textSectionLabel,
+                    textJsonPreview = textJsonPreview,
+                    cardBg = cardBg,
+                    bgDark = bgDark,
+                    accent = accent,
                 )
             }
-        }
 
-        HorizontalDivider()
-
-        // ---------- AppFunctions 信息 ----------
-        Text("AppFunctions (AI-Ready)", style = MaterialTheme.typography.titleMedium)
-        Text("Actions available for AI-generated BUTTON components:", style = MaterialTheme.typography.bodySmall)
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                val actions = AppFunctionRegistry.availableActions()
-                actions.forEach { action ->
-                    val isRegistered = AppFunctionRegistry.hasAction(action)
-                    val icon = if (isRegistered) "✓" else "✗"
+            aiError?.let { error ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = cardErrorBg),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
                     Text(
-                        text = "  $icon $action",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
+                        text = "Error: $error",
+                        modifier = Modifier.padding(12.dp),
+                        color = textError,
                     )
                 }
-                if (actions.isEmpty()) {
-                    Text("No actions registered", style = MaterialTheme.typography.bodySmall)
+            }
+
+            HorizontalDivider(color = cardBg)
+
+            // ---------- AppFunctions 信息 ----------
+            SectionHeader(
+                title = "AppFunctions (AI-Ready)",
+                subtitle = "Actions available for AI-generated components",
+                accent = accent,
+                textLabel = textLabel,
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    val actions = AppFunctionRegistry.availableActions()
+                    actions.forEach { action ->
+                        val isRegistered = AppFunctionRegistry.hasAction(action)
+                        val icon = if (isRegistered) "✓" else "✗"
+                        val iconColor = if (isRegistered) textSuccess else textError
+                        Text(
+                            text = "  $icon $action",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = iconColor,
+                        )
+                    }
+                    if (actions.isEmpty()) {
+                        Text(
+                            "No actions registered",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = textGray,
+                        )
+                    }
                 }
             }
+
+            HorizontalDivider(color = cardBg)
+
+            // ---------- Debugger ----------
+            SectionHeader(
+                title = "Widget Debugger",
+                subtitle = "Runtime widget inspection & timeline",
+                accent = accent,
+                textLabel = textLabel,
+            )
+            WidgetDebuggerPanel(modifier = Modifier.fillMaxWidth())
         }
-
-        HorizontalDivider()
-
-        // ---------- Debugger ----------
-        Text("Widget Debugger", style = MaterialTheme.typography.titleMedium)
-        WidgetDebuggerPanel(modifier = Modifier.fillMaxWidth())
     }
 }
 
 @Composable
-private fun AiResultCard(result: WidgetAiResult) {
+private fun SectionHeader(
+    title: String,
+    subtitle: String,
+    accent: Color = Color(0xFF66AAFF),
+    textLabel: Color = Color(0xFF8888AA),
+) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Filled.Star,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = accent,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Text(
+            subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = textLabel,
+            modifier = Modifier.padding(start = 24.dp),
+        )
+    }
+}
+
+@Composable
+private fun AiResultCard(
+    result: WidgetAiResult,
+    textSuccess: Color,
+    textWarning: Color,
+    textError: Color,
+    textLabel: Color,
+    textLightGray: Color,
+    textSectionLabel: Color,
+    textJsonPreview: Color,
+    cardBg: Color,
+    bgDark: Color,
+    accent: Color,
+) {
     val quality = QualityEvaluator.evaluate(result.blueprint)
     val qualityColor = when {
-        quality.score >= 0.8f -> MaterialTheme.colorScheme.primary
-        quality.score >= 0.6f -> MaterialTheme.colorScheme.tertiary
-        else -> MaterialTheme.colorScheme.error
+        quality.score >= 0.8f -> textSuccess
+        quality.score >= 0.6f -> textWarning
+        else -> textError
     }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        shape = RoundedCornerShape(12.dp),
+    ) {
         Column(modifier = Modifier.padding(12.dp)) {
             // 元数据
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text("Generated Blueprint", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    "Generated Blueprint",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = textSectionLabel,
+                )
                 Text(
                     text = "Quality: ${"%.0f".format(quality.score * 100)}%",
                     color = qualityColor,
                     style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
                 )
             }
 
@@ -440,18 +621,38 @@ private fun AiResultCard(result: WidgetAiResult) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("Model: ${result.metadata.model}", style = MaterialTheme.typography.labelSmall)
-                Text("Latency: ${result.metadata.latencyMs}ms", style = MaterialTheme.typography.labelSmall)
+                Text(
+                    "Model: ${result.metadata.model}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = textLabel,
+                )
+                Text(
+                    "Latency: ${result.metadata.latencyMs}ms",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = textLabel,
+                )
                 if (result.metadata.isFallback) {
-                    Text("fallback", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    Text(
+                        "fallback",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = textError,
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             // Blueprint 信息
-            Text("Layout: ${result.blueprint.layout.name}", style = MaterialTheme.typography.bodySmall)
-            Text("Components: ${result.blueprint.components.size}", style = MaterialTheme.typography.bodySmall)
+            Text(
+                "Layout: ${result.blueprint.layout.name}",
+                style = MaterialTheme.typography.bodySmall,
+                color = textLightGray,
+            )
+            Text(
+                "Components: ${result.blueprint.components.size}",
+                style = MaterialTheme.typography.bodySmall,
+                color = textLightGray,
+            )
             result.blueprint.components.forEach { component ->
                 val actionTag = component.props["action"]
                 val actionNote = if (actionTag != null && AppFunctionRegistry.hasAction(actionTag)) {
@@ -462,58 +663,85 @@ private fun AiResultCard(result: WidgetAiResult) {
                 Text(
                     text = "  - [${component.type.name}] ${component.id}$actionNote",
                     style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = textLightGray,
                 )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             // 质量检查详情
-            Text("Quality Checks:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Text(
+                "Quality Checks:",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = textSectionLabel,
+            )
             quality.checks.forEach { check ->
                 val icon = if (check.passed >= 0.8f) "+" else if (check.passed >= 0.5f) "~" else "-"
+                val iconColor = when {
+                    check.passed >= 0.8f -> textSuccess
+                    check.passed >= 0.5f -> textWarning
+                    else -> textError
+                }
                 Text(
                     text = "  $icon ${check.name}: ${check.detail}",
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace,
+                    color = iconColor,
                 )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             // Blueprint JSON 预览
-            Text("Blueprint JSON:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Text(
+                "Blueprint JSON:",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = textSectionLabel,
+            )
             Text(
                 text = WidgetBlueprintParser.toJson(result.blueprint),
                 style = MaterialTheme.typography.bodySmall,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 10.sp,
+                color = textJsonPreview,
                 modifier = Modifier.padding(top = 4.dp),
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             // 视觉预览
-            Text("Preview:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Text(
+                "Preview:",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = textSectionLabel,
+            )
             Spacer(modifier = Modifier.height(4.dp))
             WidgetPreviewHost(displaySize = WidgetPreviewSizes.Medium_2x2) {
-                // 使用标准 Compose 组件模拟 Blueprint 预览
-                // BlueprintRenderer 是 Glance Composable，无法在标准 Compose 中渲染
-                // 实际渲染通过 AppWidgetHostView + RemoteViews 完成
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(bgDark),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        text = result.blueprint.layout.name,
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                    result.blueprint.components.take(3).forEach { component ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "[${component.type.name}] ${component.id}",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontFamily = FontFamily.Monospace,
+                            text = result.blueprint.layout.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = accent,
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        result.blueprint.components.take(3).forEach { component ->
+                            Text(
+                                text = "[${component.type.name}] ${component.id}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace,
+                                color = textJsonPreview,
+                            )
+                        }
                     }
                 }
             }

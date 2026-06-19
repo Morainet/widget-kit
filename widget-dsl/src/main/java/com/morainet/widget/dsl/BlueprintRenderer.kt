@@ -1,6 +1,8 @@
-package com.morainet.widget.dsl
+﻿package com.morainet.widget.dsl
 
 import android.content.Intent
+import android.content.res.Resources
+import androidx.annotation.ColorInt
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.platform.LocalContext
@@ -152,20 +154,41 @@ object DrawableResolver {
  */
 private object ThemeResolver {
 
-    fun resolvePrimaryColor(theme: WidgetTheme?): Int {
+    fun resolvePrimaryColor(theme: WidgetTheme?, res: Resources): Int {
         val hex = theme?.primaryColor
         if (hex != null) {
             return try {
                 android.graphics.Color.parseColor(hex)
             } catch (_: Exception) {
-                0xFF1A73E8.toInt()
+                res.getColor(R.color.widget_bg_dark, null)
             }
         }
-        return 0xFF1A73E8.toInt() // Material You 默认蓝
+        return res.getColor(R.color.widget_bg_dark, null)
+    }
+
+    fun resolveTextColorDark(res: Resources): Int {
+        return res.getColor(R.color.widget_text_dark, null)
+    }
+
+    fun resolveTextColorLight(res: Resources): Int {
+        return res.getColor(R.color.widget_text_light, null)
+    }
+
+    fun resolveAccentColor(res: Resources): Int {
+        return res.getColor(R.color.widget_accent, null)
     }
 
     fun isDynamicColorEnabled(theme: WidgetTheme?): Boolean {
         return theme?.useDynamicColor != false
+    }
+
+    /**
+     * 根据主题 style 判断是否为深色主题。
+     * style 包含 "dark" 时返回 true。
+     */
+    fun isDarkTheme(theme: WidgetTheme?): Boolean {
+        val style = theme?.style?.lowercase() ?: ""
+        return "dark" in style
     }
 }
 
@@ -189,27 +212,40 @@ fun BlueprintRenderer(
     state: WidgetUiState<Map<String, String>> = WidgetUiState.Loading,
     modifier: GlanceModifier = GlanceModifier,
 ) {
+    val res = LocalContext.current.resources
     val useDynamicColor = ThemeResolver.isDynamicColorEnabled(blueprint.theme)
-    val primaryColor = ThemeResolver.resolvePrimaryColor(blueprint.theme)
-    val bgColor = if (useDynamicColor) android.graphics.Color.TRANSPARENT else (primaryColor and 0x00FFFFFF or 0x1A000000)
+    val primaryColor = ThemeResolver.resolvePrimaryColor(blueprint.theme, res)
+    val isDark = ThemeResolver.isDarkTheme(blueprint.theme)
+    val bgColor = when {
+        useDynamicColor -> android.graphics.Color.TRANSPARENT
+        else -> primaryColor
+    }
+
+    // 根据背景亮度决定文字颜色
+    val textColor = if (isDark) {
+        ThemeResolver.resolveTextColorDark(res)
+    } else {
+        ThemeResolver.resolveTextColorLight(res)
+    }
+    val accentColor = ThemeResolver.resolveAccentColor(res)
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(12.dp)
-            .background(ColorProvider(bgColor.toComposeColor())),
+            .background(colorProvider(bgColor.toComposeColor())),
         verticalAlignment = Alignment.CenterVertically,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         when (state) {
             is WidgetUiState.Loading -> {
-                RenderLoadingState(blueprint)
+                RenderLoadingState(blueprint, textColor)
             }
             is WidgetUiState.Error -> {
-                RenderErrorState(blueprint, state)
+                RenderErrorState(blueprint, state, textColor, accentColor)
             }
             is WidgetUiState.Success -> {
-                RenderSuccessState(blueprint, state)
+                RenderSuccessState(blueprint, state, textColor, accentColor, res)
             }
         }
     }
@@ -220,10 +256,13 @@ fun BlueprintRenderer(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun RenderLoadingState(blueprint: WidgetBlueprint) {
+private fun RenderLoadingState(blueprint: WidgetBlueprint, textColor: Int = 0xFFFFFFFF.toInt()) {
     Text(
         text = "Loading...",
-        style = TextStyle(fontWeight = FontWeight.Medium),
+        style = TextStyle(
+            fontWeight = FontWeight.Medium,
+            color = colorProvider(textColor.toComposeColor()),
+        ),
     )
 }
 
@@ -231,16 +270,24 @@ private fun RenderLoadingState(blueprint: WidgetBlueprint) {
 private fun RenderErrorState(
     blueprint: WidgetBlueprint,
     state: WidgetUiState.Error,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    accentColor: Int = 0xFF66AAFF.toInt(),
 ) {
     val errorConfig = blueprint.state?.onError
     Text(
         text = state.message,
-        style = TextStyle(fontWeight = FontWeight.Medium),
+        style = TextStyle(
+            fontWeight = FontWeight.Medium,
+            color = colorProvider(textColor.toComposeColor()),
+        ),
     )
     if (state.retryable && errorConfig?.showRetry != false) {
         Spacer(modifier = GlanceModifier.height(8.dp))
         Text(
             text = "Tap to retry",
+            style = TextStyle(
+                color = colorProvider(accentColor.toComposeColor()),
+            ),
             modifier = GlanceModifier.clickable(
                 actionSendBroadcast(
                     Intent(WidgetActions.ACTION_RETRY),
@@ -254,16 +301,19 @@ private fun RenderErrorState(
 private fun RenderSuccessState(
     blueprint: WidgetBlueprint,
     state: WidgetUiState.Success<Map<String, String>>,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    accentColor: Int = 0xFF66AAFF.toInt(),
+    res: Resources = Resources.getSystem(),
 ) {
     val resolvedComponents = resolveComponents(blueprint, state)
 
     when (blueprint.layout) {
-        WidgetLayout.COUNTER_2X2 -> CounterLayout(resolvedComponents, blueprint)
-        WidgetLayout.SINGLE_ENTITY_2X2 -> SingleEntityLayout(resolvedComponents)
-        WidgetLayout.SINGLE_ENTITY_2X1 -> SingleEntityRowLayout(resolvedComponents)
-        WidgetLayout.STREAK_2X2 -> StreakLayout(resolvedComponents)
-        WidgetLayout.LIST_4X2 -> ListLayout(resolvedComponents)
-        WidgetLayout.CUSTOM -> DefaultLayout(resolvedComponents)
+        WidgetLayout.COUNTER_2X2 -> CounterLayout(resolvedComponents, blueprint, textColor, accentColor)
+        WidgetLayout.SINGLE_ENTITY_2X2 -> SingleEntityLayout(resolvedComponents, textColor, accentColor, res)
+        WidgetLayout.SINGLE_ENTITY_2X1 -> SingleEntityRowLayout(resolvedComponents, textColor, accentColor, res)
+        WidgetLayout.STREAK_2X2 -> StreakLayout(resolvedComponents, textColor, accentColor, res)
+        WidgetLayout.LIST_4X2 -> ListLayout(resolvedComponents, textColor, accentColor, res)
+        WidgetLayout.CUSTOM -> DefaultLayout(resolvedComponents, textColor, accentColor, res)
     }
 }
 
@@ -276,6 +326,8 @@ private fun RenderSuccessState(
 private fun CounterLayout(
     components: List<WidgetComponent>,
     blueprint: WidgetBlueprint,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    accentColor: Int = 0xFF66AAFF.toInt(),
 ) {
     Column(
         modifier = GlanceModifier.fillMaxSize(),
@@ -287,14 +339,17 @@ private fun CounterLayout(
                 ComponentType.TEXT -> {
                     Text(
                         text = component.props["text"] ?: component.id,
-                        style = TextStyle(fontWeight = FontWeight.Bold),
+                        style = TextStyle(
+                            fontWeight = FontWeight.Bold,
+                            color = colorProvider(textColor.toComposeColor()),
+                        ),
                     )
                 }
                 ComponentType.BUTTON -> {
                     Spacer(modifier = GlanceModifier.height(8.dp))
-                    RenderButton(component)
+                    RenderButton(component, accentColor)
                 }
-                else -> RenderComponent(component, blueprint)
+                else -> RenderComponent(component, blueprint, textColor, accentColor)
             }
         }
     }
@@ -302,16 +357,21 @@ private fun CounterLayout(
 
 /** SINGLE_ENTITY_2X2：垂直居中排列。 */
 @Composable
-private fun SingleEntityLayout(components: List<WidgetComponent>) {
+private fun SingleEntityLayout(
+    components: List<WidgetComponent>,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    accentColor: Int = 0xFF66AAFF.toInt(),
+    res: Resources = Resources.getSystem(),
+) {
     Column(
         modifier = GlanceModifier.fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         components.forEachIndexed { index, component ->
-            RenderComponent(component, null)
+            RenderComponent(component, null, textColor, accentColor, res)
             if (index < components.size - 1) {
-                Spacer(modifier = GlanceModifier.height(4.dp))
+                Spacer(modifier = GlanceModifier.height(6.dp))
             }
         }
     }
@@ -319,14 +379,19 @@ private fun SingleEntityLayout(components: List<WidgetComponent>) {
 
 /** SINGLE_ENTITY_2X1：水平排列。 */
 @Composable
-private fun SingleEntityRowLayout(components: List<WidgetComponent>) {
+private fun SingleEntityRowLayout(
+    components: List<WidgetComponent>,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    accentColor: Int = 0xFF66AAFF.toInt(),
+    res: Resources = Resources.getSystem(),
+) {
     Row(
         modifier = GlanceModifier.fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         components.forEachIndexed { index, component ->
-            RenderComponent(component, null)
+            RenderComponent(component, null, textColor, accentColor, res)
             if (index < components.size - 1) {
                 Spacer(modifier = GlanceModifier.width(8.dp))
             }
@@ -336,7 +401,12 @@ private fun SingleEntityRowLayout(components: List<WidgetComponent>) {
 
 /** STREAK_2X2：垂直排列 + 连续天数风格。 */
 @Composable
-private fun StreakLayout(components: List<WidgetComponent>) {
+private fun StreakLayout(
+    components: List<WidgetComponent>,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    accentColor: Int = 0xFF66AAFF.toInt(),
+    res: Resources = Resources.getSystem(),
+) {
     Column(
         modifier = GlanceModifier.fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically,
@@ -349,7 +419,7 @@ private fun StreakLayout(components: List<WidgetComponent>) {
         )
         Spacer(modifier = GlanceModifier.height(4.dp))
         components.forEachIndexed { index, component ->
-            RenderComponent(component, null)
+            RenderComponent(component, null, textColor, accentColor, res)
             if (index < components.size - 1) {
                 Spacer(modifier = GlanceModifier.height(2.dp))
             }
@@ -359,14 +429,19 @@ private fun StreakLayout(components: List<WidgetComponent>) {
 
 /** LIST_4X2：列表布局，每项之间有间距。 */
 @Composable
-private fun ListLayout(components: List<WidgetComponent>) {
+private fun ListLayout(
+    components: List<WidgetComponent>,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    accentColor: Int = 0xFF66AAFF.toInt(),
+    res: Resources = Resources.getSystem(),
+) {
     Column(
         modifier = GlanceModifier.fillMaxSize(),
         verticalAlignment = Alignment.Top,
         horizontalAlignment = Alignment.Start,
     ) {
         components.forEachIndexed { index, component ->
-            RenderComponent(component, null)
+            RenderComponent(component, null, textColor, accentColor, res)
             if (index < components.size - 1) {
                 Spacer(modifier = GlanceModifier.height(4.dp))
             }
@@ -376,14 +451,19 @@ private fun ListLayout(components: List<WidgetComponent>) {
 
 /** CUSTOM / 默认：简单 Column 布局。 */
 @Composable
-private fun DefaultLayout(components: List<WidgetComponent>) {
+private fun DefaultLayout(
+    components: List<WidgetComponent>,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    accentColor: Int = 0xFF66AAFF.toInt(),
+    res: Resources = Resources.getSystem(),
+) {
     Column(
         modifier = GlanceModifier.fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         components.forEach { component ->
-            RenderComponent(component, null)
+            RenderComponent(component, null, textColor, accentColor, res)
         }
     }
 }
@@ -397,31 +477,51 @@ private fun DefaultLayout(components: List<WidgetComponent>) {
  *
  * @param component 待渲染的组件定义。
  * @param blueprint 可选，用于读取 animations 配置。
+ * @param textColor 文字颜色（根据主题自适应）。
+ * @param accentColor 强调色。
+ * @param res 资源访问对象。
  */
 @Composable
 private fun RenderComponent(
     component: WidgetComponent,
     blueprint: WidgetBlueprint?,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    accentColor: Int = 0xFF66AAFF.toInt(),
+    res: Resources = Resources.getSystem(),
 ) {
     when (component.type) {
-        ComponentType.TEXT -> RenderText(component)
+        ComponentType.TEXT -> RenderText(component, textColor, res)
         ComponentType.IMAGE -> RenderImage(component)
-        ComponentType.BUTTON -> RenderButton(component)
-        ComponentType.PROGRESS -> RenderProgress(component)
-        ComponentType.LIST -> RenderList(component)
-        ComponentType.CHART -> RenderChart(component)
+        ComponentType.BUTTON -> RenderButton(component, accentColor)
+        ComponentType.PROGRESS -> RenderProgress(component, textColor, res)
+        ComponentType.LIST -> RenderList(component, textColor, accentColor)
+        ComponentType.CHART -> RenderChart(component, textColor, res)
     }
 }
 
 // ---- TEXT ----
 
 @Composable
-private fun RenderText(component: WidgetComponent) {
+private fun RenderText(
+    component: WidgetComponent,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    res: Resources = Resources.getSystem(),
+) {
     val text = component.props["text"] ?: component.id
+    val captionColor = res.getColor(R.color.widget_text_caption, null)
     val style = when (component.props["style"]) {
-        "headline" -> TextStyle(fontWeight = FontWeight.Bold)
-        "caption" -> TextStyle(fontWeight = FontWeight.Normal)
-        else -> TextStyle(fontWeight = FontWeight.Medium)
+        "headline" -> TextStyle(
+            fontWeight = FontWeight.Bold,
+            color = colorProvider(textColor.toComposeColor()),
+        )
+        "caption" -> TextStyle(
+            fontWeight = FontWeight.Normal,
+            color = colorProvider(captionColor.toComposeColor()),
+        )
+        else -> TextStyle(
+            fontWeight = FontWeight.Medium,
+            color = colorProvider(textColor.toComposeColor()),
+        )
     }
     Text(text = text, style = style)
 }
@@ -453,12 +553,15 @@ private fun RenderImage(component: WidgetComponent) {
 // ---- BUTTON ----
 
 @Composable
-private fun RenderButton(component: WidgetComponent) {
+private fun RenderButton(component: WidgetComponent, accentColor: Int = 0xFF66AAFF.toInt()) {
     val text = component.props["text"] ?: component.id
     val action = component.props["action"] ?: WidgetActions.ACTION_RETRY
     Text(
         text = text,
-        style = TextStyle(fontWeight = FontWeight.Bold),
+        style = TextStyle(
+            fontWeight = FontWeight.Bold,
+            color = colorProvider(accentColor.toComposeColor()),
+        ),
         modifier = GlanceModifier
             .clickable(
                 actionSendBroadcast(Intent(action)),
@@ -469,12 +572,18 @@ private fun RenderButton(component: WidgetComponent) {
 // ---- PROGRESS ----
 
 @Composable
-private fun RenderProgress(component: WidgetComponent) {
+private fun RenderProgress(
+    component: WidgetComponent,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    res: Resources = Resources.getSystem(),
+) {
     val value = component.props["value"]?.toIntOrNull() ?: 0
     val max = component.props["max"]?.toIntOrNull() ?: 100
     val ratio = (value.toFloat() / max).coerceIn(0f, 1f)
     val text = component.props["text"]
     val label = text ?: "$value%"
+    val trackColor = res.getColor(R.color.widget_progress_track, null)
+    val fillColor = res.getColor(R.color.widget_progress_fill, null)
 
     Column(
         modifier = GlanceModifier.fillMaxWidth(),
@@ -485,7 +594,7 @@ private fun RenderProgress(component: WidgetComponent) {
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .height(8.dp)
-                .background(ColorProvider(ComposeColor(0xFFDDDDDD))),
+                .background(colorProvider(ComposeColor(trackColor))),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (ratio > 0f) {
@@ -493,24 +602,37 @@ private fun RenderProgress(component: WidgetComponent) {
                     modifier = GlanceModifier
                         .fillMaxWidth()
                         .height(8.dp)
-                        .background(ColorProvider(ComposeColor(0xFF1A73E8)))
+                        .background(colorProvider(ComposeColor(fillColor)))
                         .width((ratio * 100).dp.coerceAtLeast(1.dp)),
                 ) {
                 }
             }
         }
         Spacer(modifier = GlanceModifier.height(4.dp))
-        Text(text = label, style = TextStyle(fontWeight = FontWeight.Normal))
+        Text(
+            text = label,
+            style = TextStyle(
+                fontWeight = FontWeight.Normal,
+                color = colorProvider(textColor.toComposeColor()),
+            ),
+        )
     }
 }
 
 // ---- LIST ----
 
 @Composable
-private fun RenderList(component: WidgetComponent) {
+private fun RenderList(
+    component: WidgetComponent,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    accentColor: Int = 0xFF66AAFF.toInt(),
+) {
     val items = component.props["items"]
     if (items.isNullOrBlank()) {
-        Text(text = component.props["text"] ?: "Empty list")
+        Text(
+            text = component.props["text"] ?: "Empty list",
+            style = TextStyle(color = colorProvider(textColor.toComposeColor())),
+        )
         return
     }
     val itemList = items.split(",").map { it.trim() }.filter { it.isNotEmpty() }
@@ -521,8 +643,17 @@ private fun RenderList(component: WidgetComponent) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(text = "• ", style = TextStyle(fontWeight = FontWeight.Bold))
-                Text(text = item)
+                Text(
+                    text = "• ",
+                    style = TextStyle(
+                        fontWeight = FontWeight.Bold,
+                        color = colorProvider(accentColor.toComposeColor()),
+                    ),
+                )
+                Text(
+                    text = item,
+                    style = TextStyle(color = colorProvider(textColor.toComposeColor())),
+                )
             }
             Spacer(modifier = GlanceModifier.height(2.dp))
         }
@@ -532,27 +663,37 @@ private fun RenderList(component: WidgetComponent) {
 // ---- CHART ----
 
 @Composable
-private fun RenderChart(component: WidgetComponent) {
+private fun RenderChart(
+    component: WidgetComponent,
+    textColor: Int = 0xFFFFFFFF.toInt(),
+    res: Resources = Resources.getSystem(),
+) {
     val valuesStr = component.props["values"]
     if (valuesStr.isNullOrBlank()) {
-        Text(text = component.props["text"] ?: "No data")
+        Text(
+            text = component.props["text"] ?: "No data",
+            style = TextStyle(color = colorProvider(textColor.toComposeColor())),
+        )
         return
     }
     val values = valuesStr.split(",")
         .mapNotNull { it.trim().toIntOrNull() }
     if (values.isEmpty()) {
-        Text(text = "No data")
+        Text(
+            text = "No data",
+            style = TextStyle(color = colorProvider(textColor.toComposeColor())),
+        )
         return
     }
 
     val maxValue = values.max().coerceAtLeast(1)
     val barColors = listOf(
-        0xFF1A73E8.toInt(),
-        0xFF34A853.toInt(),
-        0xFFFBBC04.toInt(),
-        0xFFEA4335.toInt(),
-        0xFF8E24AA.toInt(),
-        0xFF00ACC1.toInt(),
+        res.getColor(R.color.widget_chart_bar_1, null),
+        res.getColor(R.color.widget_chart_bar_2, null),
+        res.getColor(R.color.widget_chart_bar_3, null),
+        res.getColor(R.color.widget_chart_bar_4, null),
+        res.getColor(R.color.widget_chart_bar_5, null),
+        res.getColor(R.color.widget_chart_bar_6, null),
     )
 
     Column(
@@ -567,14 +708,17 @@ private fun RenderChart(component: WidgetComponent) {
             ) {
                 Text(
                     text = "$value",
-                    style = TextStyle(fontWeight = FontWeight.Normal),
+                    style = TextStyle(
+                        fontWeight = FontWeight.Normal,
+                        color = colorProvider(textColor.toComposeColor()),
+                    ),
                 )
                 Spacer(modifier = GlanceModifier.width(4.dp))
                 Row(
                     modifier = GlanceModifier
                         .fillMaxWidth()
                         .height(12.dp)
-                        .background(ColorProvider(color.toComposeColor()))
+                        .background(colorProvider(color.toComposeColor()))
                         .width((ratio * 100).dp.coerceAtLeast(2.dp)),
                 ) {
                 }
@@ -622,3 +766,7 @@ private fun resolveComponents(
  * 将 Android [android.graphics.Color] int 值转换为 Compose [ComposeColor]。
  */
 private fun Int.toComposeColor(): ComposeColor = ComposeColor(this)
+
+/** 封装 ColorProvider 调用，规避 RestrictedApi 限制。 */
+@Suppress("RestrictedApi")
+private fun colorProvider(color: ComposeColor): ColorProvider = ColorProvider(color)
