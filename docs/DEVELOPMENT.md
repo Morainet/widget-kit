@@ -137,11 +137,12 @@ WidgetActions.ACTION_RETRY
 WidgetActions.EXTRA_WIDGET_ID
 ```
 
-**Phase 1 待实现**：
+**Phase 1 已实现**：
 
-- [ ] 批量更新去重（防抖窗口 500ms）
-- [ ] `SizeClass` 响应式尺寸适配
-- [ ] Pin Widget 辅助 API
+- [x] 批量更新去重（防抖窗口 500ms）
+- [x] `SizeClass` 响应式尺寸适配
+- [x] Pin Widget 辅助 API
+- [x] Launcher 兼容性检测（`LauncherCompatibilityChecker` + 5 大厂商 Profile）
 
 ---
 
@@ -177,10 +178,10 @@ fun WeatherWidgetContent(state: WidgetUiState<WeatherData>) {
 }
 ```
 
-**Phase 1 待实现**：
+**Phase 1 已实现**：
 
-- [ ] `WidgetStateHolder`（Glance `GlanceStateDefinition` 集成）
-- [ ] Error 态自动绑定 `ACTION_RETRY`
+- [x] `WidgetStateStore`（Glance `PreferencesGlanceStateDefinition` 集成）
+- [x] Error 态自动绑定 `ACTION_RETRY`（`WidgetRetryAction`）
 
 ---
 
@@ -225,11 +226,12 @@ WidgetScheduler.cancel(context, "weather_widget_refresh")
 2. 国产 ROM 可能杀死后台 Worker，需配合 `ACTION_REFRESH` 兜底
 3. 避免 Worker 与 `onReceive` 双写导致更新风暴
 
-**Phase 1 待实现**：
+**Phase 1 已实现**：
 
-- [ ] `WidgetNetworkRefreshWorker`（网络恢复触发）
-- [ ] `WidgetLoginRefreshWorker`（登录事件触发）
-- [ ] 更新频率监控与日志
+- [x] `WidgetNetworkRefreshWorker`（网络恢复触发）
+- [x] `WidgetLoginRefreshWorker`（登录事件触发）
+- [x] 更新频率监控与日志（`WidgetRefreshLogger`，环形 100 条）
+- [x] 4 种调度策略（周期 / 网络恢复 / 登录事件 / 一次性）
 
 ---
 
@@ -259,11 +261,15 @@ API 26–35 → layoutAnimation / ViewFlipper hack
 API < 26  → 静态布局（不保证支持，minSdk 26）
 ```
 
-**Phase 1 待实现**：
+**Phase 1 已实现**：
 
-- [ ] `FadeTransition` preset
-- [ ] `PulseTransition` preset
-- [ ] `CounterTickTransition` preset
+- [x] `FadeTransition` preset
+- [x] `PulseTransition` preset
+- [x] `CounterTickTransition` preset
+- [x] `SnappingScrollTransition` preset（TranslateAnimation + AlphaAnimation）
+- [x] `LegacyAnimationBinder` 动画→View 绑定
+- [x] `WidgetAnimationBinder` 自动解包 `AnimationResult` 并应用
+- [x] `targetViewId` 在 Legacy 路径生效
 
 ---
 
@@ -290,11 +296,11 @@ WidgetPreviewHost(
 | `Medium_2x2` | 180 × 110 | 2×2 |
 | `Large_4x2` | 360 × 110 | 4×2 |
 
-**Phase 1 待实现**：
+**Phase 1 已实现**：
 
-- [ ] RemoteViews 真机宿主（参考 Google appwidget-host）
-- [ ] 多 Launcher 尺寸模拟（Pixel / Samsung / MIUI）
-- [ ] Gradle Plugin：`@WidgetPreview` 编译期校验
+- [x] RemoteViews 真机宿主（基于 `AppWidgetHost` + `AppWidgetHostView`）
+- [x] 多 Launcher 尺寸模拟（5 大厂商 Profile：Pixel / Samsung / Xiaomi / Huawei / OPPO）
+- [ ] Gradle Plugin：`@WidgetPreview` 编译期校验（Phase 2）
 
 ---
 
@@ -315,11 +321,11 @@ WidgetInspector.getAllSnapshots()
 - 更新来源（WorkManager / Receiver / Manual）
 - 最后更新时间
 
-**Phase 1 待实现**：
+**Phase 1 已实现**：
 
-- [ ] Compose Inspector UI（Widget Tree 可视化）
-- [ ] PendingIntent 链路追踪
-- [ ] Launcher 兼容性报告
+- [x] Compose Inspector UI（Widget Tree 可视化 + 多 Widget 切换）
+- [x] PendingIntent 链路追踪（递归收集 + 列表展示）
+- [x] Launcher 兼容性报告（`LauncherCompatibilityChecker`）
 
 ---
 
@@ -363,11 +369,16 @@ val json = WidgetBlueprintParser.toJson(blueprint)
 | `LIST_4X2` | 列表数据 |
 | `STREAK_2X2` | 连续天数追踪 |
 
-**Phase 1 待实现**：
+**Phase 1 已实现**：
 
-- [ ] YAML 解析器（当前仅 JSON）
-- [ ] `BlueprintRenderer`（DSL → Glance Composable）
-- [ ] JSON Schema 校验文件
+- [x] YAML 解析器（SnakeYAML → kotlinx.serialization）
+- [x] JSON 解析器（kotlinx.serialization）
+- [x] `BlueprintRenderer`（DSL → Glance Composable），支持：
+  - 6 种布局模板差异化渲染（COUNTER_2X2 / SINGLE_ENTITY_2X2 / SINGLE_ENTITY_2X1 / STREAK_2X2 / LIST_4X2 / CUSTOM）
+  - 6 种组件渲染（TEXT / IMAGE / BUTTON / PROGRESS / LIST / CHART）
+  - Theme 集成（Material You 动态颜色）
+  - `DrawableResolver` 可注册图标映射表
+- [ ] JSON Schema 校验文件（Phase 2）
 
 ---
 
@@ -489,20 +500,20 @@ com.morainet.widget.{module}.{feature}
 ### Month 1 — 能开发
 
 - [x] 项目脚手架与模块划分
-- [ ] `widget-preview` 真机 RemoteViews 宿主
-- [ ] `widget-debugger` Inspector UI
-- [ ] `widget-core` 更新去重
+- [x] `widget-preview` 真机 RemoteViews 宿主
+- [x] `widget-debugger` Inspector UI
+- [x] `widget-core` 更新去重
 
 ### Month 2 — 能稳定跑
 
-- [ ] `widget-workmanager` 完整调度策略
-- [ ] `widget-state` GlanceState 集成
-- [ ] `widget-animation` 3 个 preset
+- [x] `widget-workmanager` 完整调度策略
+- [x] `widget-state` GlanceState 集成
+- [x] `widget-animation` 4 个 preset（含 SNAP_SCROLL）
 - [ ] Sample：Weather Widget 完整示例
 
 ### Month 3 — 能被社区用
 
-- [ ] `widget-dsl` BlueprintRenderer
+- [x] `widget-dsl` BlueprintRenderer
 - [ ] 中英文 README + 第一篇技术文章
 - [ ] Maven 发布 `0.1.0`
 - [ ] GitHub Star 500+
