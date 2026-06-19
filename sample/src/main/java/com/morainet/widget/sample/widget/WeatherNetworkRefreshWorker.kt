@@ -12,16 +12,23 @@ class WeatherNetworkRefreshWorker(
     override val widget = WeatherWidget()
 
     override suspend fun fetchData() {
-        val data = WeatherRepository.fetch()
         val manager = androidx.glance.appwidget.GlanceAppWidgetManager(applicationContext)
         val ids = manager.getGlanceIds(WeatherWidget::class.java)
-        ids.forEach { id ->
-            com.morainet.widget.state.WidgetStateStore.save(
-                context = applicationContext,
-                glanceId = id,
-                state = com.morainet.widget.state.WidgetUiState.Success(data),
-                encode = { kotlinx.serialization.json.Json.encodeToString(it) },
-            )
+
+        try {
+            val apiResponse = WeatherApiService.fetchCurrentWeather()
+            val data = WeatherRepository.transform(apiResponse)
+            ids.forEach { id ->
+                WeatherWidget.saveState(applicationContext, id, data)
+            }
+        } catch (e: Exception) {
+            val restored = WeatherRepository.restoreFromCache(applicationContext, ids)
+            if (restored) return
+
+            val errorMsg = "Weather unavailable: ${e.message ?: "network error"}"
+            ids.forEach { id ->
+                WeatherWidget.saveError(applicationContext, id, errorMsg)
+            }
         }
     }
 }

@@ -509,7 +509,7 @@ com.morainet.widget.{module}.{feature}
 - [x] `widget-workmanager` 完整调度策略
 - [x] `widget-state` GlanceState 集成
 - [x] `widget-animation` 4 个 preset（含 SNAP_SCROLL）
-- [ ] Sample：Weather Widget 完整示例
+- [x] Sample：Weather Widget 完整示例（Open-Meteo 真实 API + 7 种天气图标 + WMO 天气码映射 + 离线缓存 + 错误处理 + 位置设置）
 
 ### Month 3 — 能被社区用
 

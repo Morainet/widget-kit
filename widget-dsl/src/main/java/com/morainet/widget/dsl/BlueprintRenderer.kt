@@ -2,6 +2,7 @@ package com.morainet.widget.dsl
 
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
@@ -37,11 +38,21 @@ object DrawableResolver {
 
     /** 内置映射表：逻辑名称 -> Android 系统 drawable 资源 ID。 */
     private val mappings: MutableMap<String, Int> = mutableMapOf(
+        // 天气图标（ic_weather_* 命名规范）
+        "ic_weather_sunny" to android.R.drawable.ic_menu_day,
+        "ic_weather_cloudy" to android.R.drawable.ic_menu_compass,
+        "ic_weather_rainy" to android.R.drawable.ic_menu_agenda,
+        "ic_weather_snow" to android.R.drawable.ic_menu_month,
+        "ic_weather_windy" to android.R.drawable.ic_menu_directions,
+        "ic_weather_thunder" to android.R.drawable.ic_dialog_alert,
+        "ic_weather_unknown" to android.R.drawable.ic_menu_help,
+        // 兼容旧名称
         "ic_sunny" to android.R.drawable.ic_menu_day,
         "ic_cloudy" to android.R.drawable.ic_menu_compass,
         "ic_rain" to android.R.drawable.ic_menu_agenda,
         "ic_snow" to android.R.drawable.ic_menu_month,
         "ic_wind" to android.R.drawable.ic_menu_directions,
+        // 通用图标
         "ic_thermometer" to android.R.drawable.ic_menu_manage,
         "ic_notification" to android.R.drawable.ic_menu_info_details,
         "ic_alert" to android.R.drawable.ic_dialog_alert,
@@ -104,6 +115,30 @@ object DrawableResolver {
         } catch (_: Exception) {
             mappings[name]
         }
+    }
+
+    /**
+     * 通过 [Context] 动态解析资源名。
+     *
+     * 优先级：
+     * 1. 内置 mappings 映射表
+     * 2. Context.resources.getIdentifier（按应用包名查找）
+     * 3. 回退到 [fallbackResId]
+     *
+     * @param context Android Context
+     * @param name    资源名（不含 @drawable/ 前缀，如 "ic_weather_sunny"）
+     * @return 对应的资源 ID
+     */
+    fun resolveDynamic(context: android.content.Context, name: String): Int {
+        // 1. 先查内置映射
+        mappings[name]?.let { return it }
+
+        // 2. 通过 Context 按包名查找
+        val resId = context.resources.getIdentifier(name, "drawable", context.packageName)
+        if (resId != 0) return resId
+
+        // 3. fallback
+        return fallbackResId
     }
 }
 
@@ -394,8 +429,16 @@ private fun RenderText(component: WidgetComponent) {
 
 @Composable
 private fun RenderImage(component: WidgetComponent) {
+    val context = LocalContext.current
+    val resName = component.props["resName"]
     val src = component.props["src"] ?: "@android:drawable/ic_menu_gallery"
-    val resId = DrawableResolver.resolve(src)
+
+    val resId = if (!resName.isNullOrBlank()) {
+        DrawableResolver.resolveDynamic(context, resName)
+    } else {
+        DrawableResolver.resolve(src)
+    }
+
     if (resId != DrawableResolver.fallbackResId || src == "@android:drawable/ic_menu_gallery") {
         Image(
             provider = ImageProvider(resId),
@@ -548,18 +591,24 @@ private fun RenderChart(component: WidgetComponent) {
 
 /**
  * 将 Success 状态中的数据映射覆盖到组件 props。
- * 仅当 component.type == TEXT 且 state.data 中存在同名 key 时生效。
+ *
+ * - TEXT 组件：覆盖 `text` prop
+ * - IMAGE 组件：覆盖 `resName` prop（不含 @drawable/ 前缀，由 RenderImage 动态解析）
  */
 private fun resolveComponents(
     blueprint: WidgetBlueprint,
     state: WidgetUiState.Success<Map<String, String>>,
 ): List<WidgetComponent> {
     return blueprint.components.map { component ->
-        val overrideText = state.data[component.id]
-        if (overrideText != null && component.type == ComponentType.TEXT) {
-            component.copy(props = component.props + ("text" to overrideText))
-        } else {
-            component
+        val overrideValue = state.data[component.id]
+        when {
+            overrideValue != null && component.type == ComponentType.TEXT -> {
+                component.copy(props = component.props + ("text" to overrideValue))
+            }
+            overrideValue != null && component.type == ComponentType.IMAGE -> {
+                component.copy(props = component.props + ("resName" to overrideValue))
+            }
+            else -> component
         }
     }
 }

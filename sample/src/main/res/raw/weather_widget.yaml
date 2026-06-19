@@ -16,7 +16,7 @@ components:
   - type: IMAGE
     id: weather_icon
     props:
-      src: "@drawable/ic_sunny"
+      src: "@drawable/ic_weather_sunny"
   - type: TEXT
     id: updated_at
     props:
