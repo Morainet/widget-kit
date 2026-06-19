@@ -30,3 +30,6 @@ dependencies {
 
     testImplementation(libs.junit)
 }
+
+// Maven 发布
+apply(from = "../publish.gradle.kts")

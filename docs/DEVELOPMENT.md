@@ -514,8 +514,10 @@ com.morainet.widget.{module}.{feature}
 ### Month 3 — 能被社区用
 
 - [x] `widget-dsl` BlueprintRenderer
-- [ ] 中英文 README + 第一篇技术文章
-- [ ] Maven 发布 `0.1.0`
+- [x] 中英文 README（`README.md` + `README.zh.md`，含语言选择器）
+- [x] 第一篇技术文章（`docs/BLOG_DEBUGGING_GUIDE.md` — Android Widget 调试指南）
+- [x] Maven Central 发布配置（`publish.gradle.kts` + 7 个 library 模块已配置）
+- [ ] 执行 Maven 发布 `0.1.0`（需 Sonatype 账号 + GPG 签名）
 - [ ] GitHub Star 500+
 
 ---

@@ -32,3 +32,6 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
+
+// Maven 发布
+apply(from = "../publish.gradle.kts")

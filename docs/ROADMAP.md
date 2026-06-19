@@ -20,22 +20,24 @@ Widget Kit  →   Widget AI      →    完整生态
 - [x] 多模块项目脚手架
 - [x] 核心 API 骨架（Manager / State / Worker / DSL Schema）
 - [x] Sample Counter Widget
-- [ ] `widget-preview` RemoteViews 真机宿主
-- [ ] `widget-debugger` Compose Inspector UI
+- [x] `widget-preview` RemoteViews 真机宿主
+- [x] `widget-debugger` Compose Inspector UI
 
 ### v0.1.0-beta（Month 2）
 
-- [ ] `widget-workmanager` 网络/登录/周期完整策略
-- [ ] `widget-state` GlanceStateDefinition 集成
-- [ ] `widget-animation` Fade / Pulse / CounterTick
-- [ ] Sample Weather Widget（完整数据流）
+- [x] `widget-workmanager` 网络/登录/周期完整策略
+- [x] `widget-state` GlanceStateDefinition 集成
+- [x] `widget-animation` Fade / Pulse / CounterTick
+- [x] Sample Weather Widget（完整数据流）
 
 ### v0.1.0（Month 3，正式版）
 
-- [ ] `widget-dsl` BlueprintRenderer + YAML 解析
-- [ ] Maven Central 发布
-- [ ] 中英文文档站
-- [ ] 技术文章 × 2（调试指南 + WorkManager 踩坑）
+- [x] `widget-dsl` BlueprintRenderer + YAML 解析
+- [x] Maven Central 发布配置
+- [x] 中英文文档站
+- [x] 技术文章 × 1（调试指南 + Inspector 实战）
+- [ ] Maven Central 实际发布
+- [ ] 技术文章 × 2（WorkManager 踩坑）
 
 ---
 

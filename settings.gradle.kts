@@ -16,6 +16,12 @@ dependencyResolutionManagement {
 
 rootProject.name = "morainet-widget-kit"
 
+// Maven 坐标
+gradle.rootProject {
+    group = "com.morainet.widget"
+    version = "0.1.0"
+}
+
 include(
     ":widget-core",
     ":widget-state",
