@@ -47,6 +47,7 @@ dependencies {
     implementation(project(":widget-workmanager"))
     implementation(project(":widget-animation"))
     implementation(project(":widget-dsl"))
+    implementation(project(":widget-ai"))
     debugImplementation(project(":widget-preview"))
     debugImplementation(project(":widget-debugger"))
 

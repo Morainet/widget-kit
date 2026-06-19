@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -26,15 +28,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.morainet.widget.ai.AiGenerationConstraints
+import com.morainet.widget.ai.MockWidgetAiGenerator
+import com.morainet.widget.ai.QualityEvaluator
+import com.morainet.widget.ai.WidgetAiPipeline
+import com.morainet.widget.ai.WidgetAiResult
 import com.morainet.widget.core.WidgetPinHelper
 import com.morainet.widget.debugger.WidgetDebugSnapshot
 import com.morainet.widget.debugger.WidgetDebuggerPanel
 import com.morainet.widget.debugger.WidgetInspector
+import com.morainet.widget.dsl.BlueprintRenderer
+import com.morainet.widget.dsl.WidgetBlueprintParser
 import com.morainet.widget.preview.WidgetPreviewHost
 import com.morainet.widget.preview.WidgetPreviewSizes
 import com.morainet.widget.sample.widget.CounterWidgetContent
@@ -42,6 +54,9 @@ import com.morainet.widget.sample.widget.CounterWidgetReceiver
 import com.morainet.widget.sample.widget.WeatherRefreshWorker
 import com.morainet.widget.sample.widget.WeatherRepository
 import com.morainet.widget.state.WidgetUiState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,6 +115,17 @@ private fun SampleScreen(
 ) {
     var latInput by remember { mutableStateOf("31.23") }
     var lonInput by remember { mutableStateOf("121.47") }
+    val scope = rememberCoroutineScope()
+
+    // AI 生成状态
+    var aiPrompt by remember { mutableStateOf("一个 2x2 天气 Widget，显示城市名、温度和天气图标") }
+    var aiResult by remember { mutableStateOf<WidgetAiResult?>(null) }
+    var aiLoading by remember { mutableStateOf(false) }
+    var aiError by remember { mutableStateOf<String?>(null) }
+
+    val pipeline = remember {
+        WidgetAiPipeline(fallback = MockWidgetAiGenerator())
+    }
 
     Column(
         modifier = Modifier
@@ -178,8 +204,195 @@ private fun SampleScreen(
 
         HorizontalDivider()
 
+        // ---------- AI Widget Generator ----------
+        Text("🤖 AI Widget Generator", style = MaterialTheme.typography.titleMedium)
+        Text("Describe a widget in natural language and generate its Blueprint", style = MaterialTheme.typography.bodySmall)
+
+        OutlinedTextField(
+            value = aiPrompt,
+            onValueChange = { aiPrompt = it },
+            label = { Text("Prompt") },
+            placeholder = { Text("e.g. 一个 2x2 天气 Widget，显示城市、温度和图标") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 2,
+            maxLines = 4,
+        )
+
+        // 预设 Prompt 快速选择
+        Text("Quick Prompts:", style = MaterialTheme.typography.labelSmall)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            val quickPrompts = listOf(
+                "天气 Widget" to "一个 2x2 天气 Widget，显示城市名、温度和天气图标",
+                "计数器" to "一个计数器 Widget，有 + 和 Reset 按钮",
+                "待办列表" to "一个待办事项列表 Widget，显示前3个任务",
+                "连续打卡" to "一个连续打卡 Widget，显示打卡天数",
+            )
+            quickPrompts.take(2).forEach { (label, prompt) ->
+                Button(
+                    onClick = { aiPrompt = prompt },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    ),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(label, fontSize = 12.sp, maxLines = 1)
+                }
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            val quickPrompts = listOf(
+                "天气 Widget" to "一个 2x2 天气 Widget，显示城市名、温度和天气图标",
+                "计数器" to "一个计数器 Widget，有 + 和 Reset 按钮",
+                "待办列表" to "一个待办事项列表 Widget，显示前3个任务",
+                "连续打卡" to "一个连续打卡 Widget，显示打卡天数",
+            )
+            quickPrompts.drop(2).forEach { (label, prompt) ->
+                Button(
+                    onClick = { aiPrompt = prompt },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    ),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(label, fontSize = 12.sp, maxLines = 1)
+                }
+            }
+        }
+
+        Button(
+            onClick = {
+                scope.launch {
+                    aiLoading = true
+                    aiError = null
+                    try {
+                        val result = withContext(Dispatchers.IO) {
+                            pipeline.generate(aiPrompt)
+                        }
+                        aiResult = result
+                    } catch (e: Exception) {
+                        aiError = e.message ?: "Unknown error"
+                    } finally {
+                        aiLoading = false
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !aiLoading,
+        ) {
+            if (aiLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.width(20.dp).height(20.dp),
+                    strokeWidth = 2.dp,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text(if (aiLoading) "Generating..." else "Generate Widget Blueprint")
+        }
+
+        // AI 生成结果
+        aiResult?.let { result ->
+            AiResultCard(result)
+        }
+
+        aiError?.let { error ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                ),
+            ) {
+                Text(
+                    text = "Error: $error",
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+        }
+
+        HorizontalDivider()
+
         // ---------- Debugger ----------
         Text("Widget Debugger", style = MaterialTheme.typography.titleMedium)
         WidgetDebuggerPanel(modifier = Modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+private fun AiResultCard(result: WidgetAiResult) {
+    val quality = QualityEvaluator.evaluate(result.blueprint)
+    val qualityColor = when {
+        quality.score >= 0.8f -> MaterialTheme.colorScheme.primary
+        quality.score >= 0.6f -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.error
+    }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            // 元数据
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text("Generated Blueprint", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Quality: ${"%.0f".format(quality.score * 100)}%",
+                    color = qualityColor,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text("Model: ${result.metadata.model}", style = MaterialTheme.typography.labelSmall)
+                Text("Latency: ${result.metadata.latencyMs}ms", style = MaterialTheme.typography.labelSmall)
+                if (result.metadata.isFallback) {
+                    Text("⚠ fallback", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Blueprint 信息
+            Text("Layout: ${result.blueprint.layout.name}", style = MaterialTheme.typography.bodySmall)
+            Text("Components: ${result.blueprint.components.size}", style = MaterialTheme.typography.bodySmall)
+            result.blueprint.components.forEach { component ->
+                Text(
+                    text = "  - [${component.type.name}] ${component.id}",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 质量检查详情
+            Text("Quality Checks:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            quality.checks.forEach { check ->
+                val icon = if (check.passed >= 0.8f) "✓" else if (check.passed >= 0.5f) "~" else "✗"
+                Text(
+                    text = "  $icon ${check.name}: ${check.detail}",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontFamily = FontFamily.Monospace,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 预览
+            Text("Preview:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            WidgetPreviewHost(displaySize = WidgetPreviewSizes.Medium_2x2) {
+                BlueprintRenderer(blueprint = result.blueprint)
+            }
+        }
     }
 }

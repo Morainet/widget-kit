@@ -47,8 +47,8 @@ Widget Kit  →   Widget AI      →    完整生态
 
 ### v0.2.0-alpha
 
-- [ ] `morainet-widget-ai` 模块（独立仓库或子模块）
-- [ ] Prompt → WidgetBlueprint（Gemini API）
+- [x] `widget-ai` 模块搭建
+- [x] Prompt → WidgetBlueprint（Gemini API + Mock 回退）
 - [ ] Widget Studio AI 插件（生成 → 预览 → 导出）
 
 ### v0.2.0-beta

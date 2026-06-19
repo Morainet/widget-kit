@@ -382,6 +382,53 @@ val json = WidgetBlueprintParser.toJson(blueprint)
 
 ---
 
+## 12. Phase 2：widget-ai（2026 Q4）
+
+### 12.1 widget-ai
+
+**职责**：Prompt → WidgetBlueprint 的 AI 生成管线。
+
+```kotlin
+val pipeline = WidgetAiPipeline(
+    primary = GeminiWidgetAiGenerator(apiKey = "..."),
+    fallback = MockWidgetAiGenerator(),
+)
+
+val result = pipeline.generate("一个 2x2 天气 Widget")
+// result.blueprint → WidgetBlueprint → BlueprintRenderer → Glance
+```
+
+**核心组件**：
+
+| 组件 | 说明 |
+|------|------|
+| `WidgetAiGenerator` | 生成器接口（支持 Gemini / Mock 双后端） |
+| `PromptTemplateEngine` | 将用户 Prompt + 约束编译为结构化 LLM Prompt（含 Schema + Layout 参考 + Few-shot） |
+| `ResultParser` | 从 LLM 原始输出提取 JSON → `WidgetBlueprint` |
+| `QualityEvaluator` | 5 维度质量评分（完整性 / 布局匹配 / 组件数 / ID 命名 / 布局适配） |
+| `WidgetAiPipeline` | 编排管线：primary → 质量评估 → 不达标时自动回退到 fallback |
+| `GeminiWidgetAiGenerator` | Google Gemini API 实现（`gemini-2.5-flash`） |
+| `MockWidgetAiGenerator` | 关键词匹配 10 种预设模板（天气 / 计数器 / 待办 / 打卡 / 股票 / 日历 / 名言 / 健身 / 时钟 / 通用） |
+
+**Phase 2 已实现**：
+- [x] `widget-ai` 模块搭建
+- [x] Prompt 模板引擎（Schema 注入 + Layout 参考 + 组件文档）
+- [x] `WidgetAiGenerator` 接口 + `GeminiWidgetAiGenerator`（真实 API）
+- [x] `MockWidgetAiGenerator`（10 种预设模板，关键词匹配）
+- [x] `QualityEvaluator`（5 维度评分）
+- [x] `ResultParser`（LLM 输出 → JSON 提取 → Blueprint 解析）
+- [x] `WidgetAiPipeline`（primary + fallback + 质量阈值）
+- [x] Sample 集成（AI 生成 UI + 4 个快速 Prompt + Blueprint 预览）
+
+**Phase 2 待完成**：
+- [ ] Image → WidgetBlueprint（参考 Widget2Code 论文）
+- [ ] 10 种 canonical layout 模板约束
+- [ ] AppFunctions Scaffold（AI-Ready 桥接）
+- [ ] CLI 工具：`morainet-widget generate "2x2 weather widget"`
+- [ ] JSON Schema 校验文件
+
+---
+
 ## 5. 开发环境搭建
 
 ### 5.1 前置条件
@@ -524,10 +571,16 @@ com.morainet.widget.{module}.{feature}
 
 ## 9. 与 Phase 2（AI Widget）的接口预留
 
-Phase 2 的 `morainet-widget-ai` 将依赖本 Kit，核心契约：
+Phase 2 的 `widget-ai` 模块已启动，核心契约：
 
 ```text
 Prompt / Image
+    ↓
+WidgetAiPipeline (widget-ai)
+    ├── PromptTemplateEngine（编译 System + User Prompt）
+    ├── WidgetAiGenerator（Gemini API / Mock 回退）
+    ├── ResultParser（LLM 输出 → WidgetBlueprint）
+    └── QualityEvaluator（5 维度质量评分）
     ↓
 WidgetBlueprint (widget-dsl)
     ↓

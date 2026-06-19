@@ -30,5 +30,6 @@ include(
     ":widget-preview",
     ":widget-debugger",
     ":widget-dsl",
+    ":widget-ai",
     ":sample",
 )
